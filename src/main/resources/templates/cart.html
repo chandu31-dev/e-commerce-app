@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart - Catchy</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🛍️ Catchy</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/cart">Cart (<span id="cart-count">0</span>)</a></li>
+                <li><a href="/orders">My Orders</a></li>
+                <li><a href="/profile">My Profile</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h2>Shopping Cart</h2>
+        
+        <div th:if="${cartItems.isEmpty()}" style="text-align: center; padding: 3rem;">
+            <h3>Your cart is empty</h3>
+            <p>Start shopping to add items to your cart!</p>
+            <a href="/products" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
+        </div>
+
+        <div th:if="${!cartItems.isEmpty()}">
+            <div th:each="cartItem : ${cartItems}" class="cart-item">
+                <img th:src="${cartItem.product.imageURL != null ? cartItem.product.imageURL : 'https://via.placeholder.com/100'}" 
+                     th:alt="${cartItem.product.name}" class="cart-item-image">
+                <div class="cart-item-details">
+                    <h3 th:text="${cartItem.product.name}"></h3>
+                    <p th:text="${cartItem.product.category}"></p>
+                    <p>Price: $<span th:text="${#numbers.formatDecimal(cartItem.product.price, 1, 2)}"></span></p>
+                </div>
+                <div style="margin-left: auto; text-align: right;">
+                    <div class="quantity-selector">
+                        <label>Qty:</label>
+                        <input type="number" 
+                               th:id="'qty-' + ${cartItem.id}"
+                               th:value="${cartItem.quantity}" 
+                               min="1" 
+                               th:max="${cartItem.product.stock}"
+                               th:onchange="'updateCartQuantity(' + ${cartItem.id} + ', parseInt(document.getElementById(\\'qty-' + ${cartItem.id} + '\\').value))'">
+                    </div>
+                    <div class="cart-item-price" style="margin-top: 0.5rem;">
+                        $<span th:text="${#numbers.formatDecimal(cartItem.product.price * cartItem.quantity, 1, 2)}"></span>
+                    </div>
+                    <button class="btn btn-danger" 
+                            style="margin-top: 0.5rem;"
+                            th:onclick="'removeFromCart(' + ${cartItem.id} + ')'">Remove</button>
+                </div>
+            </div>
+
+            <div class="cart-total">
+                <h2>Total: $<span th:text="${#numbers.formatDecimal(total, 1, 2)}"></span></h2>
+                <button class="btn btn-success" style="margin-top: 1rem;" onclick="placeOrder()">Place Order</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>
+

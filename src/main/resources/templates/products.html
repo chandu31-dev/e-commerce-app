@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - Catchy</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🛍️ Catchy</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li th:if="${#authentication == null || !#authentication.isAuthenticated()}">
+                    <a href="/login">Login</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/cart">Cart (<span id="cart-count">0</span>)</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/orders">My Orders</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/profile">My Profile</a>
+                </li>
+                <li th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
+                    <a href="/admin/dashboard">Admin</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/logout">Logout</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search products..." 
+                   th:value="${searchQuery != null ? searchQuery : ''}">
+            <button onclick="searchProducts()">Search</button>
+        </div>
+
+        <h2 th:if="${selectedCategory != null}">Category: <span th:text="${selectedCategory}"></span></h2>
+        <h2 th:if="${selectedCategory == null && searchQuery == null}">All Products</h2>
+        <h2 th:if="${searchQuery != null}">Search Results for: <span th:text="${searchQuery}"></span></h2>
+
+        <div class="categories">
+            <a th:href="@{/products}" class="category-btn" th:classappend="${selectedCategory == null ? 'active' : ''}">All</a>
+            <a th:each="cat : ${categories}" 
+               th:href="@{/products(category=${cat})}" 
+               class="category-btn"
+               th:classappend="${selectedCategory == cat ? 'active' : ''}"
+               th:text="${cat}"></a>
+        </div>
+
+        <div class="products-grid">
+            <div th:each="product : ${products}" class="product-card" 
+                 th:onclick="'window.location.href=\'/products/' + ${product.id} + '\''">
+                <img th:src="${product.imageURL != null ? product.imageURL : 'https://via.placeholder.com/250x200'}" 
+                     th:alt="${product.name}" class="product-image">
+                <div class="product-info">
+                    <div class="product-name" th:text="${product.name}"></div>
+                    <div class="product-category" th:text="${product.category}"></div>
+                    <div class="product-price">$<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></span></div>
+                    <button class="btn btn-primary" 
+                            th:onclick="'event.stopPropagation(); addToCart(' + ${product.id} + ')'">Add to Cart</button>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${products.isEmpty()}" style="text-align: center; padding: 3rem;">
+            <h3>No products found</h3>
+            <p>Try a different search or category</p>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script>
+        function searchProducts() {
+            const query = document.getElementById('search-input').value;
+            if (query) {
+                window.location.href = `/products?search=${encodeURIComponent(query)}`;
+            } else {
+                window.location.href = '/products';
+            }
+        }
+
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchProducts();
+            }
+        });
+    </script>
+</body>
+</html>
+

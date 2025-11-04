@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - Catchy</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🛍️ Catchy</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/cart">Cart (<span id="cart-count">0</span>)</a></li>
+                <li><a href="/orders">My Orders</a></li>
+                <li><a href="/profile">My Profile</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h2>My Orders</h2>
+        
+        <div th:if="${orders.isEmpty()}" style="text-align: center; padding: 3rem;">
+            <h3>No orders yet</h3>
+            <p>Start shopping to place your first order!</p>
+            <a href="/products" class="btn btn-primary" style="margin-top: 1rem;">Browse Products</a>
+        </div>
+
+        <div th:if="${!orders.isEmpty()}">
+            <div th:each="order : ${orders}" class="cart-item" style="cursor: pointer;"
+                 th:onclick="'window.location.href=\'/orders/' + ${order.id} + '\''">
+                <div class="cart-item-details">
+                    <h3>Order #<span th:text="${order.id}"></span></h3>
+                    <p>Date: <span th:text="${#temporals.format(order.orderDate, 'yyyy-MM-dd HH:mm')}"></span></p>
+                    <p>Total: $<span th:text="${#numbers.formatDecimal(order.totalPrice, 1, 2)}"></span></p>
+                </div>
+                <div style="margin-left: auto;">
+                    <button class="btn btn-primary">View Details</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>
+

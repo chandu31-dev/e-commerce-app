@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Catchy</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🛍️ Catchy</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/cart">Cart</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h2>Order Confirmation</h2>
+        <div class="message message-success">
+            <h3>Order Placed Successfully!</h3>
+            <p>Thank you for your purchase. Your order has been confirmed.</p>
+            <p>You will receive an email confirmation shortly.</p>
+        </div>
+        <div style="margin-top: 2rem;">
+            <a href="/orders" class="btn btn-primary">View My Orders</a>
+            <a href="/products" class="btn" style="margin-left: 1rem; background: #6c757d; color: white;">Continue Shopping</a>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>
+

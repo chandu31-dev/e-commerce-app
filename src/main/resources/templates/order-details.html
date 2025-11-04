@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Details - Catchy</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🛍️ Catchy</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/orders">My Orders</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h2>Order Details #<span th:text="${order.id}"></span></h2>
+        <p><strong>Order Date:</strong> <span th:text="${#temporals.format(order.orderDate, 'yyyy-MM-dd HH:mm')}"></span></p>
+        <p><strong>Total Price:</strong> $<span th:text="${#numbers.formatDecimal(order.totalPrice, 1, 2)}"></span></p>
+        
+        <h3 style="margin-top: 2rem;">Order Items</h3>
+        <div th:each="orderItem : ${orderItems}" class="cart-item">
+            <img th:src="${orderItem.product.imageURL != null ? orderItem.product.imageURL : 'https://via.placeholder.com/100'}" 
+                 th:alt="${orderItem.product.name}" class="cart-item-image">
+            <div class="cart-item-details">
+                <h3 th:text="${orderItem.product.name}"></h3>
+                <p>Quantity: <span th:text="${orderItem.quantity}"></span></p>
+                <p>Price per unit: $<span th:text="${#numbers.formatDecimal(orderItem.price / orderItem.quantity, 1, 2)}"></span></p>
+            </div>
+            <div style="margin-left: auto; text-align: right;">
+                <div class="cart-item-price">
+                    $<span th:text="${#numbers.formatDecimal(orderItem.price, 1, 2)}"></span>
+                </div>
+            </div>
+        </div>
+
+        <a href="/orders" class="btn btn-primary" style="margin-top: 2rem;">Back to Orders</a>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>
+

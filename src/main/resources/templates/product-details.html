@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${product.name + ' - Catchy'}">Product Details - Catchy</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🛍️ Catchy</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li th:if="${#authentication == null || !#authentication.isAuthenticated()}">
+                    <a href="/login">Login</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/cart">Cart (<span id="cart-count">0</span>)</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/orders">My Orders</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/logout">Logout</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="product-details">
+            <img th:src="${product.imageURL != null ? product.imageURL : 'https://via.placeholder.com/500x400'}" 
+                 th:alt="${product.name}" class="product-details-image">
+            <div class="product-details-info">
+                <h1 th:text="${product.name}"></h1>
+                <div class="product-category" th:text="${product.category}"></div>
+                <div class="product-details-price">$<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></span></div>
+                <p th:text="${product.description != null ? product.description : 'No description available'}"></p>
+                <p><strong>Stock:</strong> <span th:text="${product.stock}"></span> available</p>
+                
+                <div class="quantity-selector">
+                    <label>Quantity:</label>
+                    <input type="number" id="quantity" value="1" min="1" th:max="${product.stock}">
+                </div>
+                
+                <button class="btn btn-primary" 
+                        th:onclick="'addToCart(' + ${product.id} + ', parseInt(document.getElementById(\\'quantity\\').value))'"
+                        th:disabled="${product.stock == 0}">
+                    <span th:if="${product.stock > 0}">Add to Cart</span>
+                    <span th:if="${product.stock == 0}">Out of Stock</span>
+                </button>
+                
+                <a href="/products" class="btn" style="margin-left: 1rem; background: #6c757d; color: white;">Back to Products</a>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>
+

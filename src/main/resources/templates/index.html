@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catchy - Home</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🛍️ Catchy</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li th:if="${#authentication == null || !#authentication.isAuthenticated()}">
+                    <a href="/login">Login</a>
+                </li>
+                <li th:if="${#authentication == null || !#authentication.isAuthenticated()}">
+                    <a href="/signup">Sign Up</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/cart">Cart (<span id="cart-count">0</span>)</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/orders">My Orders</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/profile">My Profile</a>
+                </li>
+                <li th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
+                    <a href="/admin/dashboard">Admin</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/logout">Logout</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="hero">
+        <h1>Welcome to Catchy</h1>
+        <p>Your one-stop shop for all your needs</p>
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search products...">
+            <button onclick="searchProducts()">Search</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Shop by Category</h2>
+        <div class="categories">
+            <a href="/products?category=Electronics" class="category-btn">Electronics</a>
+            <a href="/products?category=Fashion" class="category-btn">Fashion</a>
+            <a href="/products?category=Books" class="category-btn">Books</a>
+            <a href="/products?category=Home & Garden" class="category-btn">Home & Garden</a>
+            <a href="/products?category=Sports" class="category-btn">Sports</a>
+            <a href="/products" class="category-btn">All Products</a>
+        </div>
+
+        <h2 style="margin-top: 3rem;">Featured Products</h2>
+        <div class="products-grid" id="products-grid">
+            <!-- Products will be loaded here -->
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script>
+        async function loadFeaturedProducts() {
+            try {
+                const response = await fetch('/products/api/all');
+                const products = await response.json();
+                const grid = document.getElementById('products-grid');
+                
+                grid.innerHTML = products.slice(0, 8).map(product => `
+                    <div class="product-card" onclick="window.location.href='/products/${product.id}'">
+                        <img src="${product.imageURL || 'https://via.placeholder.com/250x200'}" 
+                             alt="${product.name}" class="product-image">
+                        <div class="product-info">
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-category">${product.category}</div>
+                            <div class="product-price">$${product.price.toFixed(2)}</div>
+                            <button class="btn btn-primary" onclick="event.stopPropagation(); addToCart(${product.id})">Add to Cart</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+
+        function searchProducts() {
+            const query = document.getElementById('search-input').value;
+            if (query) {
+                window.location.href = `/products?search=${encodeURIComponent(query)}`;
+            }
+        }
+
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchProducts();
+            }
+        });
+
+        loadFeaturedProducts();
+    </script>
+</body>
+</html>
+
