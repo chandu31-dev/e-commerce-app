@@ -13,6 +13,7 @@ public class UserPrincipal implements UserDetails {
     private String email;
     private String password;
     private Collection<? extends GrantedAuthority> authorities;
+    private boolean enabled;
 
     public UserPrincipal(Long id, String email, String password, Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
@@ -25,7 +26,9 @@ public class UserPrincipal implements UserDetails {
         Collection<GrantedAuthority> authorities = Collections.singletonList(
                 new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
         );
-        return new UserPrincipal(user.getId(), user.getEmail(), user.getPassword(), authorities);
+        UserPrincipal up = new UserPrincipal(user.getId(), user.getEmail(), user.getPassword(), authorities);
+        up.enabled = user.isVerified();
+        return up;
     }
 
     public Long getId() {
@@ -64,7 +67,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }
 

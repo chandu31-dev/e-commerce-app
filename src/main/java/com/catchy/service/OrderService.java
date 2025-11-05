@@ -1,15 +1,19 @@
 package com.catchy.service;
 
-import com.catchy.model.*;
-import com.catchy.repository.OrderItemRepository;
-import com.catchy.repository.OrderRepository;
-import com.catchy.service.CartService;
+import java.math.BigDecimal;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
+import com.catchy.model.CartItem;
+import com.catchy.model.Order;
+import com.catchy.model.OrderItem;
+import com.catchy.model.Product;
+import com.catchy.model.User;
+import com.catchy.repository.OrderItemRepository;
+import com.catchy.repository.OrderRepository;
 
 @Service
 public class OrderService {
@@ -82,6 +86,13 @@ public class OrderService {
         cartService.clearCart(user);
 
         return order;
+    }
+
+    @Transactional
+    public Order updateOrderStatus(Long orderId, com.catchy.model.Order.Status status) {
+        Order order = getOrderById(orderId);
+        order.setStatus(status);
+        return orderRepository.save(order);
     }
 }
 

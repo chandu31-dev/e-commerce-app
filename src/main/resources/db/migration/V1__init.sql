@@ -1,18 +1,6 @@
--- Pre-create users table so Hibernate can add FKs reliably in H2
+-- Initial schema migration for Catchy
 
--- Safely drop existing tables (disable referential integrity for H2)
-SET REFERENTIAL_INTEGRITY FALSE;
-DROP TABLE IF EXISTS order_items;
-DROP TABLE IF EXISTS cart_items;
-DROP TABLE IF EXISTS orders;
-DROP TABLE IF EXISTS products;
-DROP TABLE IF EXISTS verification_tokens;
-DROP TABLE IF EXISTS password_reset_tokens;
-DROP TABLE IF EXISTS users;
-SET REFERENTIAL_INTEGRITY TRUE;
-
--- Users
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
@@ -21,8 +9,7 @@ CREATE TABLE users (
   verified BOOLEAN NOT NULL DEFAULT FALSE
 );
 
--- Products
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   description VARCHAR(1000),
@@ -32,8 +19,7 @@ CREATE TABLE products (
   stock INTEGER NOT NULL
 );
 
--- Orders
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   order_date TIMESTAMP NOT NULL,
   total_price DECIMAL(10,2) NOT NULL,
@@ -42,8 +28,7 @@ CREATE TABLE orders (
   CONSTRAINT FK_orders_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Order items
-CREATE TABLE order_items (
+CREATE TABLE IF NOT EXISTS order_items (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   price DECIMAL(10,2) NOT NULL,
   quantity INTEGER NOT NULL,
@@ -53,8 +38,7 @@ CREATE TABLE order_items (
   CONSTRAINT FK_order_items_product FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
--- Cart items
-CREATE TABLE cart_items (
+CREATE TABLE IF NOT EXISTS cart_items (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   quantity INTEGER NOT NULL,
   product_id BIGINT NOT NULL,
@@ -64,8 +48,7 @@ CREATE TABLE cart_items (
   CONSTRAINT FK_cart_items_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Verification tokens
-CREATE TABLE verification_tokens (
+CREATE TABLE IF NOT EXISTS verification_tokens (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   token VARCHAR(255) NOT NULL UNIQUE,
   user_id BIGINT NOT NULL,
@@ -73,8 +56,7 @@ CREATE TABLE verification_tokens (
   CONSTRAINT FK_ver_tokens_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Password reset tokens
-CREATE TABLE password_reset_tokens (
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   token VARCHAR(255) NOT NULL UNIQUE,
   user_id BIGINT NOT NULL,
