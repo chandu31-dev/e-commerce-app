@@ -1,0 +1,10 @@
+target
+.git
+.github
+.idea
+.mvn
+logs
+data
+uploads
+*.log
+*.zip
