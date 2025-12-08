@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promotions</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Promotions & Coupons (placeholder)</h1>
+    <p>Create discounts and manage campaigns.</p>
+</div>
+
+<div class="container" style="margin-top:2rem;">
+    <h2>Coupons</h2>
+    <form id="couponForm" onsubmit="createCoupon(event)">
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+            <input id="code" placeholder="Code" required />
+            <input id="discount" type="number" step="0.1" placeholder="Percent" required />
+            <input id="validDays" type="number" placeholder="Valid days" value="30" />
+        </div>
+        <div style="margin-top:8px;"><button class="btn btn-primary" type="submit">Create Coupon</button></div>
+    </form>
+
+    <h3 style="margin-top:1rem;">Available Coupons</h3>
+    <ul id="couponList"></ul>
+</div>
+
+<script>
+    async function createCoupon(e) {
+        e.preventDefault();
+        const code = document.getElementById('code').value;
+        const discount = parseFloat(document.getElementById('discount').value);
+        const days = parseInt(document.getElementById('validDays').value || '30');
+        const from = new Date();
+        const until = new Date(); until.setDate(until.getDate() + days);
+        const form = new URLSearchParams();
+        form.append('code', code);
+        form.append('discountPercent', discount);
+        form.append('validFrom', from.toISOString());
+        form.append('validUntil', until.toISOString());
+        const resp = await fetch('/promotions/api/coupons', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: form });
+        const json = await resp.json();
+        if (resp.ok) { alert('Coupon created'); loadCoupons(); } else { alert(json || 'Error'); }
+    }
+
+    async function loadCoupons() {
+        const resp = await fetch('/promotions/api/coupons');
+        if (!resp.ok) return;
+        const coupons = await resp.json();
+        const ul = document.getElementById('couponList'); ul.innerHTML = '';
+        coupons.forEach(c => { const li = document.createElement('li'); li.textContent = c.code + ' - ' + c.discountPercent + '% (active:' + c.active + ')'; ul.appendChild(li); });
+    }
+
+    loadCoupons();
+</script>
+</body>
+</html>

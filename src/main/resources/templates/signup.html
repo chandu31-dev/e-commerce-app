@@ -8,11 +8,7 @@
 </head>
 <body>
     <header>
-        <nav class="navbar">
-            <a href="/" class="logo">🛍️ Catchy</a>
-            <ul class="nav-links">
-                <li><a href="/">Home</a></li>
-                <li><a href="/products">Products</a></li>
+        </nav>
                 <li><a href="/login">Login</a></li>
             </ul>
         </nav>
@@ -34,6 +30,8 @@
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password" required minlength="6">
                 </div>
+                <input type="hidden" id="role" name="role" th:value="${role}">
+                <p style="text-align:center; margin-bottom:1rem;">Registering as: <strong th:text="${role}">USER</strong></p>
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Sign Up</button>
             </form>
             <p style="text-align: center; margin-top: 1rem;">
@@ -42,32 +40,36 @@
         </div>
     </div>
 
-    <script th:src="@{/js/main.js}"></script>
+            <script th:src="@{/js/main.js}"></script>
     <script>
         async function handleSignup(event) {
             event.preventDefault();
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value || 'USER';
 
             try {
                 const response = await fetch('/api/auth/signup', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ name, email, password })
+                    body: JSON.stringify({ name, email, password, role })
                 });
 
-                const result = await response.text();
-                
-                if (result === 'success') {
-                    showMessage('Account created successfully! Redirecting to login...', 'success');
+                const result = await response.json();
+
+                if (result && result.success) {
+                    showMessage('Account created successfully! Redirecting...', 'success');
                     setTimeout(() => {
-                        window.location.href = '/login';
-                    }, 2000);
+                        // If server provided redirectUrl, go there; otherwise default to login
+                        window.location.href = result.redirectUrl || '/login';
+                    }, 1000);
                 } else {
-                    showMessage(result.includes('error') ? result : 'Error creating account', 'error');
+                    const msg = result && result.message ? result.message : 'Error creating account';
+                    showMessage(msg, 'error');
                 }
             } catch (error) {
                 showMessage('Error creating account', 'error');

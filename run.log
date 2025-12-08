@@ -1,0 +1,44 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.7)
+
+2025-12-07T02:45:30.701+05:30  INFO 948 --- [           main] com.catchy.CatchyApplication             : Starting CatchyApplication v0.0.1-SNAPSHOT using Java 23.0.2 with PID 948 (C:\Users\HP\Downloads\catchy\catchy\target\catchy-0.0.1-SNAPSHOT.jar started by HP in C:\Users\HP\Downloads\catchy\catchy)
+2025-12-07T02:45:30.705+05:30  INFO 948 --- [           main] com.catchy.CatchyApplication             : No active profile set, falling back to 1 default profile: "default"
+2025-12-07T02:45:32.631+05:30  INFO 948 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-12-07T02:45:32.937+05:30  INFO 948 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 279 ms. Found 20 JPA repository interfaces.
+2025-12-07T02:45:35.085+05:30  INFO 948 --- [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2025-12-07T02:45:35.161+05:30  INFO 948 --- [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-12-07T02:45:35.162+05:30  INFO 948 --- [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.48]
+2025-12-07T02:45:35.259+05:30  INFO 948 --- [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-12-07T02:45:35.261+05:30  INFO 948 --- [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 4459 ms
+2025-12-07T02:45:35.405+05:30 ERROR 948 --- [           main] o.s.b.web.embedded.tomcat.TomcatStarter  : Error starting Tomcat context. Exception: org.springframework.beans.factory.UnsatisfiedDependencyException. Message: Error creating bean with name 'jwtAuthenticationFilter': Unsatisfied dependency expressed through field 'userDetailsService': Error creating bean with name 'userDetailsServiceImpl': Unsatisfied dependency expressed through field 'userRepository': Error creating bean with name 'userRepository' defined in com.catchy.repository.UserRepository defined in @EnableJpaRepositories declared on JpaRepositoriesRegistrar.EnableJpaRepositoriesConfiguration: Cannot resolve reference to bean 'jpaSharedEM_entityManagerFactory' while setting bean property 'entityManager'
+2025-12-07T02:45:35.473+05:30  INFO 948 --- [           main] o.apache.catalina.core.StandardService   : Stopping service [Tomcat]
+2025-12-07T02:45:35.505+05:30  WARN 948 --- [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Unable to start web server
+2025-12-07T02:45:35.545+05:30  INFO 948 --- [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2025-12-07T02:45:35.613+05:30 ERROR 948 --- [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Failed to configure a DataSource: 'url' attribute is not specified and no embedded datasource could be configured.
+
+Reason: Failed to determine a suitable driver class
+
+
+Action:
+
+Consider the following:
+	If you want an embedded database (H2, HSQL or Derby), please put it on the classpath.
+	If you have database settings to be loaded from a particular profile you may need to activate it (no profiles are currently active).
+

@@ -5,105 +5,268 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catchy - Home</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        /* Shopping animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        @keyframes slideInLeft {
+            from { transform: translateX(-100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+
+        .animated-section {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin: 2rem 0;
+            border-radius: 10px;
+        }
+
+        .shopping-icons {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin: 3rem 0;
+            flex-wrap: wrap;
+        }
+
+        .icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .icon-item .emoji {
+            font-size: 4rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .icon-item:nth-child(2) .emoji {
+            animation: spin 4s linear infinite;
+        }
+
+        .icon-item:nth-child(3) .emoji {
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        .icon-item:nth-child(4) .emoji {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .icon-item p {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-card .emoji {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #667eea;
+            color: white;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 1rem 0.5rem;
+            border: 2px solid #667eea;
+        }
+
+        .cta-button:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        .cta-button.secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .cta-button.secondary:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .stat {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+    </style>
 </head>
 <body>
     <header>
         <nav class="navbar">
             <a href="/" class="logo">🛍️ Catchy</a>
-            <ul class="nav-links">
-                <li><a href="/">Home</a></li>
-                <li><a href="/products">Products</a></li>
-                <li th:if="${#authentication == null || !#authentication.isAuthenticated()}">
-                    <a href="/login">Login</a>
-                </li>
-                <li th:if="${#authentication == null || !#authentication.isAuthenticated()}">
-                    <a href="/signup">Sign Up</a>
-                </li>
-                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
-                    <a href="/cart">Cart (<span id="cart-count">0</span>)</a>
-                </li>
-                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
-                    <a href="/orders">My Orders</a>
-                </li>
-                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
-                    <a href="/profile">My Profile</a>
-                </li>
-                <li th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
-                    <a href="/admin/dashboard">Admin</a>
-                </li>
-                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
-                    <a href="/logout">Logout</a>
-                </li>
-            </ul>
         </nav>
     </header>
 
     <div class="hero">
         <h1>Welcome to Catchy</h1>
         <p>Your one-stop shop for all your needs</p>
-        <div class="search-bar">
-            <input type="text" id="search-input" placeholder="Search products...">
-            <button onclick="searchProducts()">Search</button>
+        <div style="margin-top: 2rem;">
+            <a href="/login" class="cta-button">Login</a>
+            <a href="/signup" class="cta-button secondary">Sign Up</a>
         </div>
     </div>
 
     <div class="container">
-        <h2>Shop by Category</h2>
-        <div class="categories">
-            <a href="/products?category=Electronics" class="category-btn">Electronics</a>
-            <a href="/products?category=Fashion" class="category-btn">Fashion</a>
-            <a href="/products?category=Books" class="category-btn">Books</a>
-            <a href="/products?category=Home & Garden" class="category-btn">Home & Garden</a>
-            <a href="/products?category=Sports" class="category-btn">Sports</a>
-            <a href="/products" class="category-btn">All Products</a>
+        <div class="animated-section">
+            <h2>Shop Smarter, Shop Better 🎉</h2>
+            <div class="shopping-icons">
+                <div class="icon-item">
+                    <div class="emoji">🛍️</div>
+                    <p>Easy Shopping</p>
+                </div>
+                <div class="icon-item">
+                    <div class="emoji">💳</div>
+                    <p>Secure Payment</p>
+                </div>
+                <div class="icon-item">
+                    <div class="emoji">📦</div>
+                    <p>Fast Delivery</p>
+                </div>
+                <div class="icon-item">
+                    <div class="emoji">⭐</div>
+                    <p>Top Rated</p>
+                </div>
+            </div>
         </div>
 
-        <h2 style="margin-top: 3rem;">Featured Products</h2>
-        <div class="products-grid" id="products-grid">
-            <!-- Products will be loaded here -->
+        <h2 style="text-align: center; margin-top: 3rem;">Why Choose Catchy?</h2>
+        <div class="features">
+            <div class="feature-card">
+                <div class="emoji">💯</div>
+                <h3>Quality Products</h3>
+                <p>Handpicked items from trusted sellers to ensure you get the best quality.</p>
+            </div>
+            <div class="feature-card">
+                <div class="emoji">💰</div>
+                <h3>Best Prices</h3>
+                <p>Competitive pricing with regular discounts and exclusive deals for members.</p>
+            </div>
+            <div class="feature-card">
+                <div class="emoji">🚀</div>
+                <h3>Fast & Free Shipping</h3>
+                <p>Quick delivery to your doorstep with zero shipping costs on qualifying orders.</p>
+            </div>
+            <div class="feature-card">
+                <div class="emoji">🔒</div>
+                <h3>Safe & Secure</h3>
+                <p>Your data is protected with industry-leading encryption and security measures.</p>
+            </div>
+            <div class="feature-card">
+                <div class="emoji">👥</div>
+                <h3>24/7 Support</h3>
+                <p>Friendly customer service team available round the clock to assist you.</p>
+            </div>
+            <div class="feature-card">
+                <div class="emoji">🎁</div>
+                <h3>Loyalty Rewards</h3>
+                <p>Earn points on every purchase and redeem them for exclusive rewards.</p>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 4rem 0;">
+            <h2>Join Thousands of Happy Shoppers</h2>
+            <div class="stats">
+                <div>
+                    <div class="stat">10K+</div>
+                    <div class="stat-label">Active Users</div>
+                </div>
+                <div>
+                    <div class="stat">50K+</div>
+                    <div class="stat-label">Products</div>
+                </div>
+                <div>
+                    <div class="stat">100K+</div>
+                    <div class="stat-label">Orders</div>
+                </div>
+                <div>
+                    <div class="stat">4.8⭐</div>
+                    <div class="stat-label">Rating</div>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 3rem 0; padding: 3rem; background: #f8f9fa; border-radius: 10px;">
+            <h2>Ready to Start Shopping?</h2>
+            <p style="font-size: 1.1rem; color: #666; margin: 1rem 0;">Create your account and discover thousands of amazing products!</p>
+            <div>
+                <a href="/signup" class="cta-button" style="padding: 1.2rem 2.5rem; font-size: 1.1rem;">Get Started</a>
+            </div>
         </div>
     </div>
 
     <script th:src="@{/js/main.js}"></script>
-    <script>
-        async function loadFeaturedProducts() {
-            try {
-                const response = await fetch('/products/api/all');
-                const products = await response.json();
-                const grid = document.getElementById('products-grid');
-                
-                grid.innerHTML = products.slice(0, 8).map(product => `
-                    <div class="product-card" onclick="window.location.href='/products/${product.id}'">
-                        <img src="${product.imageURL || 'https://via.placeholder.com/250x200'}" 
-                             alt="${product.name}" class="product-image">
-                        <div class="product-info">
-                            <div class="product-name">${product.name}</div>
-                            <div class="product-category">${product.category}</div>
-                            <div class="product-price">$${product.price.toFixed(2)}</div>
-                            <button class="btn btn-primary" onclick="event.stopPropagation(); addToCart(${product.id})">Add to Cart</button>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading products:', error);
-            }
-        }
-
-        function searchProducts() {
-            const query = document.getElementById('search-input').value;
-            if (query) {
-                window.location.href = `/products?search=${encodeURIComponent(query)}`;
-            }
-        }
-
-        document.getElementById('search-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchProducts();
-            }
-        });
-
-        loadFeaturedProducts();
-    </script>
 </body>
 </html>
 

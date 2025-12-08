@@ -16,7 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import com.catchy.model.User;
 import com.catchy.repository.UserRepository;
-import com.catchy.repository.VerificationTokenRepository;
+// token repository not required in test after token removal
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -31,8 +31,6 @@ public class IntegrationSmokeTests {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private VerificationTokenRepository verificationTokenRepository;
 
     @Test
     void smokeTestIndexAndProductsAndSignup() throws Exception {
@@ -59,8 +57,7 @@ public class IntegrationSmokeTests {
         User user = userRepository.findByEmail(email).orElse(null);
         assertThat(user).isNotNull();
 
-        // verification token created
-        boolean tokenExists = verificationTokenRepository.findAll().stream().anyMatch(t -> t.getUser().getId().equals(user.getId()));
-        assertThat(tokenExists).isTrue();
+        // verification token creation is disabled in this test environment
+        // previous behavior asserted a token existed; token creation was removed
     }
 }

@@ -1,31 +1,5 @@
 package com.catchy.controller;
 
-import java.io.File;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.catchy.model.Order;
 import com.catchy.model.Product;
 import com.catchy.model.User;
@@ -33,6 +7,17 @@ import com.catchy.service.AuthService;
 import com.catchy.service.OrderService;
 import com.catchy.service.ProductService;
 import com.catchy.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/admin")
@@ -49,6 +34,11 @@ public class AdminController {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private com.catchy.service.VendorService vendorService;
+    @Autowired(required = false)
+    private com.catchy.service.MailService mailService;
 
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
@@ -67,6 +57,71 @@ public class AdminController {
             return "admin-dashboard";
         } catch (Exception e) {
             return "redirect:/";
+        }
+    }
+
+    @GetMapping("/vendors/kyc")
+    public String kycReviewPage(Model model) {
+        try {
+            model.addAttribute("pendingVendors", vendorService.getVendorsByKycStatus(com.catchy.model.Vendor.KycStatus.PENDING));
+            return "vendor-kyc-review";
+        } catch (Exception e) {
+            return "redirect:/admin/dashboard";
+        }
+    }
+
+    @PostMapping("/api/vendors/{id}/approve")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> approveVendor(@PathVariable Long id) {
+        Map<String, Object> resp = new HashMap<>();
+        try {
+            com.catchy.model.Vendor v = vendorService.approveVendor(id);
+            // Ensure the linked user is granted VENDOR role upon approval
+            try {
+                com.catchy.model.User u = v.getUser();
+                if (u != null && !u.getRole().equals(com.catchy.model.User.Role.VENDOR)) {
+                    u.setRole(com.catchy.model.User.Role.VENDOR);
+                    authService.saveUser(u);
+                }
+            } catch (Exception ex) {
+                // ignore user save failures here; vendor is approved regardless
+            }
+            // notify vendor
+            try {
+                if (mailService != null && v.getContactEmail() != null) {
+                    String body = "Hi " + v.getShopName() + ",\n\nYour vendor account has been approved. You can now list products and manage orders.\n\nThanks.";
+                    mailService.sendVendorNotificationEmail(v.getContactEmail(), "Vendor account approved", body);
+                }
+            } catch (Exception ex) { }
+            resp.put("success", true);
+            resp.put("vendor", v);
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            resp.put("success", false);
+            resp.put("message", e.getMessage());
+            return ResponseEntity.status(400).body(resp);
+        }
+    }
+
+    @PostMapping("/api/vendors/{id}/reject")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> rejectVendor(@PathVariable Long id) {
+        Map<String, Object> resp = new HashMap<>();
+        try {
+            com.catchy.model.Vendor v = vendorService.rejectVendor(id);
+            try {
+                if (mailService != null && v.getContactEmail() != null) {
+                    String body = "Hi " + v.getShopName() + ",\n\nYour vendor application has been rejected. Please contact support for details.\n\nThanks.";
+                    mailService.sendVendorNotificationEmail(v.getContactEmail(), "Vendor application rejected", body);
+                }
+            } catch (Exception ex) { }
+            resp.put("success", true);
+            resp.put("vendor", v);
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            resp.put("success", false);
+            resp.put("message", e.getMessage());
+            return ResponseEntity.status(400).body(resp);
         }
     }
 
@@ -142,59 +197,6 @@ public class AdminController {
     @ResponseBody
     public ResponseEntity<List<Order>> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());
-    }
-
-    @PostMapping("/api/orders/{id}/status")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> updateOrderStatus(@PathVariable Long id,
-                                                                   @RequestParam String status) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            com.catchy.model.Order.Status st = com.catchy.model.Order.Status.valueOf(status.toUpperCase());
-            Order updated = orderService.updateOrderStatus(id, st);
-            response.put("success", true);
-            response.put("order", updated);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException iae) {
-            response.put("success", false);
-            response.put("message", "Invalid status");
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.ok(response);
-        }
-    }
-
-    @PostMapping("/api/products/upload")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> uploadProductImage(@RequestParam("image") MultipartFile file) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            if (file.isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Empty file");
-                return ResponseEntity.ok(response);
-            }
-
-            String uploadsDir = "src/main/resources/static/uploads/";
-            File dir = new File(uploadsDir);
-            if (!dir.exists()) dir.mkdirs();
-
-            String original = StringUtils.cleanPath(file.getOriginalFilename());
-            String filename = UUID.randomUUID().toString() + "_" + original;
-            Path target = Paths.get(uploadsDir).resolve(filename);
-            file.transferTo(target.toFile());
-
-            String imageUrl = "/uploads/" + filename;
-            response.put("success", true);
-            response.put("imageUrl", imageUrl);
-            return ResponseEntity.ok(response);
-        } catch (IOException e) {
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.ok(response);
-        }
     }
 }
 

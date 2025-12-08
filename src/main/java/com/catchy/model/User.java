@@ -3,6 +3,8 @@ package com.catchy.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,15 +42,18 @@ public class User {
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private Role role = Role.USER;
 
     @Column(nullable = false)
-    private boolean verified = false;
+    private boolean enabled = false;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<CartItem> cartItems = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Order> orders = new ArrayList<>();
 
     public User() {}
@@ -58,6 +63,7 @@ public class User {
         this.email = email;
         this.password = password;
         this.role = role;
+        this.enabled = false;
     }
 
     // Getters and Setters
@@ -101,12 +107,12 @@ public class User {
         this.role = role;
     }
 
-    public boolean isVerified() {
-        return verified;
+    public boolean isEnabled() {
+        return enabled;
     }
 
-    public void setVerified(boolean verified) {
-        this.verified = verified;
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     public List<CartItem> getCartItems() {
@@ -126,7 +132,7 @@ public class User {
     }
 
     public enum Role {
-        USER, ADMIN
+        USER, ADMIN, VENDOR
     }
 }
 

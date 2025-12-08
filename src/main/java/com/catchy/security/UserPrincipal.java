@@ -1,12 +1,13 @@
 package com.catchy.security;
 
-import com.catchy.model.User;
+import java.util.Collection;
+import java.util.Collections;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.Collections;
+import com.catchy.model.User;
 
 public class UserPrincipal implements UserDetails {
     private Long id;
@@ -15,20 +16,19 @@ public class UserPrincipal implements UserDetails {
     private Collection<? extends GrantedAuthority> authorities;
     private boolean enabled;
 
-    public UserPrincipal(Long id, String email, String password, Collection<? extends GrantedAuthority> authorities) {
+    public UserPrincipal(Long id, String email, String password, Collection<? extends GrantedAuthority> authorities, boolean enabled) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.authorities = authorities;
+        this.enabled = enabled;
     }
 
     public static UserPrincipal create(User user) {
         Collection<GrantedAuthority> authorities = Collections.singletonList(
                 new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
         );
-        UserPrincipal up = new UserPrincipal(user.getId(), user.getEmail(), user.getPassword(), authorities);
-        up.enabled = user.isVerified();
-        return up;
+        return new UserPrincipal(user.getId(), user.getEmail(), user.getPassword(), authorities, user.isEnabled());
     }
 
     public Long getId() {

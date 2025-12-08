@@ -1,19 +1,25 @@
 package com.catchy.controller;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 import com.catchy.model.Order;
 import com.catchy.model.OrderItem;
 import com.catchy.model.User;
 import com.catchy.service.AuthService;
 import com.catchy.service.OrderService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Controller
 @RequestMapping("/orders")
@@ -61,7 +67,7 @@ public class OrderController {
 
     @PostMapping("/api/place")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> placeOrder() {
+    public ResponseEntity<Map<String, Object>> placeOrder(@RequestBody Map<String, Object> body) {
         Map<String, Object> response = new HashMap<>();
         try {
             User user = authService.getCurrentUser();
@@ -70,7 +76,22 @@ public class OrderController {
                 response.put("message", "Please login first");
                 return ResponseEntity.ok(response);
             }
-            Order order = orderService.placeOrder(user);
+
+            Long addressId = null;
+            if (body != null && body.containsKey("addressId")) {
+                Object addressIdObj = body.get("addressId");
+                if (addressIdObj instanceof Number) {
+                    addressId = ((Number) addressIdObj).longValue();
+                }
+            }
+
+            String couponCode = null;
+            if (body != null && body.containsKey("couponCode")) {
+                Object cc = body.get("couponCode");
+                if (cc != null) couponCode = String.valueOf(cc);
+            }
+
+            Order order = orderService.placeOrder(user, addressId, couponCode);
             response.put("success", true);
             response.put("message", "Order placed successfully");
             response.put("orderId", order.getId());

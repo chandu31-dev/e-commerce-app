@@ -1,5 +1,7 @@
 package com.catchy.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -20,13 +22,11 @@ public class CartItem {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
-    
-    @Column(name = "session_id")
-    private String sessionId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
@@ -39,12 +39,6 @@ public class CartItem {
 
     public CartItem(User user, Product product, Integer quantity) {
         this.user = user;
-        this.product = product;
-        this.quantity = quantity;
-    }
-
-    public CartItem(String sessionId, Product product, Integer quantity) {
-        this.sessionId = sessionId;
         this.product = product;
         this.quantity = quantity;
     }
@@ -64,14 +58,6 @@ public class CartItem {
 
     public void setUser(User user) {
         this.user = user;
-    }
-
-    public String getSessionId() {
-        return sessionId;
-    }
-
-    public void setSessionId(String sessionId) {
-        this.sessionId = sessionId;
     }
 
     public Product getProduct() {

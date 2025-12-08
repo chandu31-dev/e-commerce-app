@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor KYC Review</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Vendor KYC Review</h1>
+    <div th:if="${pendingVendors == null || pendingVendors.size() == 0}">
+        <p>No pending vendor KYC requests.</p>
+    </div>
+    <div th:each="vendor : ${pendingVendors}">
+        <div class="card">
+            <h3 th:text="${vendor.shopName}">Shop Name</h3>
+            <p><strong>Owner:</strong> <span th:text="${vendor.user.name}">Owner Name</span></p>
+            <p><strong>Company:</strong> <span th:text="${vendor.companyName}">Company</span></p>
+            <p><strong>Tax ID:</strong> <span th:text="${vendor.taxId}">Tax ID</span></p>
+            <p><strong>Contact:</strong> <span th:text="${vendor.contactEmail}">Contact</span></p>
+            <p th:if="${vendor.kycDocumentUrl}"><a th:href="${vendor.kycDocumentUrl}">View KYC Document</a></p>
+            <div style="margin-top:1rem;">
+                <button th:attr="onclick=${'approve(' + vendor.id + ')'}" class="btn btn-primary">Approve</button>
+                <button th:attr="onclick=${'reject(' + vendor.id + ')'}" class="btn btn-danger">Reject</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function approve(id) {
+        const resp = await fetch('/admin/api/vendors/' + id + '/approve', { method: 'POST' });
+        const json = await resp.json();
+        if (json.success) {
+            alert('Vendor approved');
+            location.reload();
+        } else {
+            alert('Error: ' + json.message);
+        }
+    }
+    async function reject(id) {
+        const resp = await fetch('/admin/api/vendors/' + id + '/reject', { method: 'POST' });
+        const json = await resp.json();
+        if (json.success) {
+            alert('Vendor rejected');
+            location.reload();
+        } else {
+            alert('Error: ' + json.message);
+        }
+    }
+</script>
+</body>
+</html>

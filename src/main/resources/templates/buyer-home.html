@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catchy - Buyer Home</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .buyer-hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .buyer-hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .buyer-hero p {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .quick-link-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .quick-link-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+        }
+
+        .quick-link-card .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .quick-link-card h3 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .quick-link-card p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .featured-section {
+            margin-top: 3rem;
+        }
+
+        .featured-section h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🛍️ Catchy</a>
+            <ul class="nav-links">
+                <li><a href="/buyer/home">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/cart">Cart (<span id="cart-count">0</span>)</a></li>
+                <li><a href="/wishlist">Wishlist</a></li>
+                <li><a href="/orders">My Orders</a></li>
+                <li><a href="/profile">My Profile</a></li>
+                <li><a href="/addresses">Manage Addresses</a></li>
+                <li th:if="${!#authorization.expression('hasRole(''VENDOR'')')}">
+                    <a href="/vendor/register">Become Vendor</a>
+                </li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="buyer-hero">
+            <h1>Welcome Back! 👋</h1>
+            <p>Browse thousands of products and shop smarter</p>
+        </div>
+
+        <div class="quick-links">
+            <a href="/products" class="quick-link-card">
+                <div class="icon">🛍️</div>
+                <h3>Browse Products</h3>
+                <p>Explore our collection of products</p>
+            </a>
+            <a href="/cart" class="quick-link-card">
+                <div class="icon">🛒</div>
+                <h3>My Cart</h3>
+                <p>View and manage your shopping cart</p>
+            </a>
+            <a href="/wishlist" class="quick-link-card">
+                <div class="icon">❤️</div>
+                <h3>Wishlist</h3>
+                <p>Your saved items and favorites</p>
+            </a>
+            <a href="/orders" class="quick-link-card">
+                <div class="icon">📦</div>
+                <h3>My Orders</h3>
+                <p>Track your orders and history</p>
+            </a>
+            <a href="/profile" class="quick-link-card">
+                <div class="icon">👤</div>
+                <h3>My Profile</h3>
+                <p>Manage your account information</p>
+            </a>
+            <a href="/addresses" class="quick-link-card">
+                <div class="icon">📍</div>
+                <h3>Addresses</h3>
+                <p>Manage delivery addresses</p>
+            </a>
+            <a href="/vendor/register" class="quick-link-card">
+                <div class="icon">🏪</div>
+                <h3>Become Vendor</h3>
+                <p>Start selling on Catchy</p>
+            </a>
+        </div>
+
+        <div class="featured-section">
+            <h2>Featured Products</h2>
+            <div class="products-grid" id="products-grid">
+                <!-- Products will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script>
+        async function loadFeaturedProducts() {
+            try {
+                const response = await fetch('/products/api/all');
+                const products = await response.json();
+                const grid = document.getElementById('products-grid');
+                
+                grid.innerHTML = products.slice(0, 8).map(product => `
+                    <div class="product-card" onclick="window.location.href='/products/${product.id}'">
+                        <img src="${product.imageURL || 'https://via.placeholder.com/250x200'}" 
+                             alt="${product.name}" class="product-image">
+                        <div class="product-info">
+                            <div class="product-name">${product.name}</div>
+                            <div class="product-category">${product.category}</div>
+                            <div class="product-price">₹${product.price.toFixed(2)}</div>
+                            <button class="btn btn-primary" onclick="event.stopPropagation(); addToCart(${product.id})">Add to Cart</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCartCount();
+            updateWishlistCount();
+            loadFeaturedProducts();
+        });
+    </script>
+</body>
+</html>

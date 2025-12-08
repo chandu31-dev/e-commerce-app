@@ -13,4 +13,5 @@ public class CatchyApplication {
 		SpringApplication.run(CatchyApplication.class, args);
 	}
 
+
 }

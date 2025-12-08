@@ -5,11 +5,11 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -30,7 +30,12 @@ public class Order {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "address_id")
+    private Address address;
 
     @NotNull(message = "Total price is required")
     @DecimalMin(value = "0.0", inclusive = false, message = "Total price must be greater than 0")
@@ -40,11 +45,14 @@ public class Order {
     @Column(name = "order_date", nullable = false)
     private LocalDateTime orderDate = LocalDateTime.now();
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private Status status = Status.PENDING;
+    @Column(name = "discount_amount", precision = 10, scale = 2)
+    private java.math.BigDecimal discountAmount;
+
+    @Column(name = "coupon_code")
+    private String couponCode;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<OrderItem> orderItems = new ArrayList<>();
 
     public Order() {}
@@ -53,15 +61,6 @@ public class Order {
         this.user = user;
         this.totalPrice = totalPrice;
         this.orderDate = LocalDateTime.now();
-        this.status = Status.PENDING;
-    }
-
-    public enum Status {
-        PENDING,
-        PROCESSING,
-        SHIPPED,
-        DELIVERED,
-        CANCELLED
     }
 
     // Getters and Setters
@@ -105,12 +104,18 @@ public class Order {
         this.orderItems = orderItems;
     }
 
-    public Status getStatus() {
-        return status;
+    public Address getAddress() {
+        return address;
     }
 
-    public void setStatus(Status status) {
-        this.status = status;
+    public void setAddress(Address address) {
+        this.address = address;
     }
+
+    public java.math.BigDecimal getDiscountAmount() { return discountAmount; }
+    public void setDiscountAmount(java.math.BigDecimal discountAmount) { this.discountAmount = discountAmount; }
+
+    public String getCouponCode() { return couponCode; }
+    public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
 }
 

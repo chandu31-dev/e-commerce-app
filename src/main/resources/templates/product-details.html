@@ -13,6 +13,126 @@
             <ul class="nav-links">
                 <li><a href="/">Home</a></li>
                 <li><a href="/products">Products</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="product-details">
+            <img th:src="${product.imageURL != null ? product.imageURL : 'https://via.placeholder.com/500x400'}" 
+                 th:alt="${product.name}" class="product-details-image">
+            <div class="product-details-info">
+                <h1 th:text="${product.name}"></h1>
+                <div class="product-category" th:text="${product.category}"></div>
+                <div class="product-details-price"><span th:text="${currencySymbol}"></span><span th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></span></div>
+                <p th:text="${product.description != null ? product.description : 'No description available'}"></p>
+                <p><strong>Stock:</strong> <span th:text="${product.stock}"></span> available</p>
+                
+                <div class="quantity-selector">
+                    <label>Quantity:</label>
+                    <input type="number" id="quantity" value="1" min="1" th:max="${product.stock}">
+                </div>
+                
+                <button class="btn btn-primary" 
+                        th:onclick="'addToCart(' + ${product.id} + ', parseInt(document.getElementById(\'quantity\').value))'"
+                        th:disabled="${product.stock == 0}">
+                    <span th:if="${product.stock > 0}">Add to Cart</span>
+                    <span th:if="${product.stock == 0}">Out of Stock</span>
+                </button>
+                <button class="btn btn-secondary wishlist-btn" th:attr="data-pid=${product.id}" onclick="addToWishlist([[${product.id}]])">♡ Wishlist</button>
+                <a href="/products" class="btn" style="margin-left: 1rem; background: #6c757d; color: white;">Back to Products</a>
+            </div>
+        </div>
+
+        <section style="margin-top:1.5rem;">
+            <h3>Available Coupons</h3>
+            <div th:if="${coupons == null or #lists.isEmpty(coupons)}">
+                <p>No active coupons at the moment.</p>
+            </div>
+            <ul th:if="${coupons != null}">
+                <li th:each="c : ${coupons}">
+                    <strong th:text="${c.code}"></strong> — <span th:text="${c.discountPercent}"></span>% off
+                    <button onclick="copyCode('[[${c.code}]]')" style="margin-left:8px;">Copy Code</button>
+                </li>
+            </ul>
+        </section>
+
+        <section style="margin-top:1.5rem;">
+            <h3>Reviews <small th:text="'(' + ${averageRating} + ' avg)'"></small></h3>
+            <div th:if="${reviews == null || reviews.size() == 0}">
+                <p>No reviews yet.</p>
+            </div>
+            <div th:each="r : ${reviews}">
+                <div class="card">
+                    <p><strong th:text="${r.user.name}">User</strong> — <span th:text="${r.rating}">5</span>/5</p>
+                    <p th:text="${r.comment}"></p>
+                    <small th:text="${#temporals.format(r.createdAt, 'yyyy-MM-dd HH:mm')}"></small>
+                </div>
+            </div>
+            <div style="margin-top:8px;">
+                <button th:if="${reviewPageNumber > 0}" onclick="window.location.href='?reviewPage=' + (${reviewPageNumber} - 1)">◀ Prev</button>
+                <span th:text="'Page ' + (${reviewPageNumber} + 1) + ' of ' + ${reviewTotalPages}"></span>
+                <button th:if="${reviewPageNumber + 1 < reviewTotalPages}" onclick="window.location.href='?reviewPage=' + (${reviewPageNumber} + 1)">Next ▶</button>
+            </div>
+
+            <div style="margin-top:1rem;">
+                <h4>Leave a review</h4>
+                <form id="reviewForm" onsubmit="submitReview(event)">
+                    <input type="hidden" id="productId" th:value="${product.id}" />
+                    <div class="form-group">
+                        <label for="rating">Rating</label>
+                        <select id="rating" required>
+                            <option value="5">5</option>
+                            <option value="4">4</option>
+                            <option value="3">3</option>
+                            <option value="2">2</option>
+                            <option value="1">1</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="comment">Comment</label>
+                        <textarea id="comment" rows="3"></textarea>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Submit Review</button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script>
+        function copyCode(code) { navigator.clipboard && navigator.clipboard.writeText(code); alert('Coupon code copied: ' + code); }
+        async function submitReview(e) {
+            e.preventDefault();
+            const pid = document.getElementById('productId').value;
+            const rating = document.getElementById('rating').value;
+            const comment = document.getElementById('comment').value;
+            const form = new URLSearchParams();
+            form.append('productId', pid);
+            form.append('rating', rating);
+            form.append('comment', comment);
+            const resp = await fetch('/product/api/review', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: form });
+            if (resp.ok) { alert('Review submitted'); location.reload(); } else { alert('Error submitting review'); }
+        }
+        document.addEventListener('DOMContentLoaded', function(){ markWishlistButtons(); });
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${product.name + ' - Catchy'}">Product Details - Catchy</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🛍️ Catchy</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
                 <li th:if="${#authentication == null || !#authentication.isAuthenticated()}">
                     <a href="/login">Login</a>
                 </li>
@@ -21,6 +141,18 @@
                 </li>
                 <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
                     <a href="/orders">My Orders</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/profile">My Profile</a>
+                </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/addresses">Manage Addresses</a>
+                </li>
+                <li th:if="${!#authorization.expression('hasRole(''VENDOR'')')}">
+                    <a href="/vendor/register">Become Vendor</a>
+                </li>
+                <li th:if="${#authorization.expression('hasRole(''VENDOR'')')}">
+                    <a href="/vendor/dashboard">Vendor Dashboard</a>
                 </li>
                 <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
                     <a href="/logout">Logout</a>
@@ -36,7 +168,7 @@
             <div class="product-details-info">
                 <h1 th:text="${product.name}"></h1>
                 <div class="product-category" th:text="${product.category}"></div>
-                <div class="product-details-price">$<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></span></div>
+                <div class="product-details-price"><span th:text="${currencySymbol}"></span><span th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></span></div>
                 <p th:text="${product.description != null ? product.description : 'No description available'}"></p>
                 <p><strong>Stock:</strong> <span th:text="${product.stock}"></span> available</p>
                 

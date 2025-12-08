@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Reviews</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h2>Reviews</h2>
+    <div th:if="${reviews.size() == 0}">
+        <p>No reviews yet.</p>
+    </div>
+    <div th:each="r : ${reviews}">
+        <div class="card">
+            <p><strong th:text="${r.user.name}">User</strong> — <span th:text="${r.rating}">5</span>/5</p>
+            <p th:text="${r.comment}"></p>
+            <small th:text="${#temporals.format(r.createdAt, 'yyyy-MM-dd HH:mm')}"></small>
+        </div>
+    </div>
+    <div style="margin-top:1rem;">
+        <h3>Leave a review</h3>
+        <form id="reviewForm" onsubmit="submitReview(event)">
+            <input type="hidden" id="productId" value="" />
+            <div class="form-group">
+                <label for="rating">Rating</label>
+                <select id="rating" required>
+                    <option value="5">5</option>
+                    <option value="4">4</option>
+                    <option value="3">3</option>
+                    <option value="2">2</option>
+                    <option value="1">1</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="comment">Comment</label>
+                <textarea id="comment" rows="3"></textarea>
+            </div>
+            <button class="btn btn-primary" type="submit">Submit Review</button>
+        </form>
+    </div>
+</div>
+<script>
+    function setProductId(pid) { document.getElementById('productId').value = pid; }
+    async function submitReview(e) {
+        e.preventDefault();
+        const pid = document.getElementById('productId').value;
+        const rating = document.getElementById('rating').value;
+        const comment = document.getElementById('comment').value;
+        const form = new URLSearchParams();
+        form.append('productId', pid);
+        form.append('rating', rating);
+        form.append('comment', comment);
+        const resp = await fetch('/product/api/review', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: form });
+        if (resp.ok) { alert('Review submitted'); location.reload(); } else { alert('Error submitting review'); }
+    }
+    // If productId variable set via server, set it
+    if (typeof PRODUCT_ID !== 'undefined' && PRODUCT_ID) setProductId(PRODUCT_ID);
+</script>
+</body>
+</html>

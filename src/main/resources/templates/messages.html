@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <div class="messages-container">
+        <div class="inbox">
+            <h3>Inbox</h3>
+            <ul id="inboxList"></ul>
+        </div>
+        <div class="thread">
+            <h3 id="threadTitle">Select a conversation</h3>
+            <div id="messageList" style="height:400px; overflow:auto; border:1px solid #ddd; padding:1rem; background:#fff;"></div>
+            <div style="margin-top:1rem; display:flex; gap:0.5rem;">
+                <input id="messageInput" placeholder="Write a message..." style="flex:1; padding:0.5rem;">
+                <button id="sendBtn" class="btn btn-primary">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentChatUserId = null;
+
+    async function loadInbox() {
+        try {
+            const resp = await fetch('/messages/api/inbox');
+            if (!resp.ok) return;
+            const items = await resp.json();
+            const ul = document.getElementById('inboxList');
+            ul.innerHTML = '';
+            items.forEach(m => {
+                const li = document.createElement('li');
+                li.style.cursor = 'pointer';
+                li.textContent = m.sender.name + ': ' + (m.content.length > 50 ? m.content.slice(0,50)+'...' : m.content);
+                li.onclick = () => openThread(m.sender.id);
+                ul.appendChild(li);
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    async function openThread(userId) {
+        currentChatUserId = userId;
+        document.getElementById('threadTitle').textContent = 'Conversation with ' + userId;
+        const resp = await fetch(`/messages/api/thread/${userId}`);
+        if (!resp.ok) return;
+        const thread = await resp.json();
+        const div = document.getElementById('messageList');
+        div.innerHTML = '';
+        thread.forEach(m => {
+            const p = document.createElement('p');
+            p.textContent = (m.sender && m.sender.name ? m.sender.name : m.sender) + ': ' + m.content;
+            div.appendChild(p);
+        });
+    }
+
+    document.getElementById('sendBtn').addEventListener('click', async () => {
+        const content = document.getElementById('messageInput').value;
+        if (!currentChatUserId || !content) return;
+        const form = new URLSearchParams();
+        form.append('toUserId', currentChatUserId);
+        form.append('content', content);
+        const resp = await fetch('/messages/api/send', { method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body: form });
+        if (resp.ok) {
+            document.getElementById('messageInput').value = '';
+            openThread(currentChatUserId);
+        }
+    });
+
+    loadInbox();
+</script>
+</body>
+</html>

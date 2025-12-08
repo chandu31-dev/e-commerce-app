@@ -1,14 +1,15 @@
 package com.catchy.service;
 
-import com.catchy.model.Product;
-import com.catchy.repository.ProductRepository;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
+import com.catchy.model.Product;
+import com.catchy.repository.ProductRepository;
 
 @Service
 public class ProductService {
@@ -17,6 +18,22 @@ public class ProductService {
 
     public List<Product> getAllProducts() {
         return productRepository.findAll();
+    }
+
+    public org.springframework.data.domain.Page<Product> searchProductsAdvanced(String q, String category, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.jpa.domain.Specification<Product> spec = com.catchy.spec.ProductSpecification.byFilters(q, category, minPrice, maxPrice);
+        return productRepository.findAll(spec, pageable);
+    }
+
+    public List<String> suggestProductNames(String q, int limit) {
+        if (q == null || q.isBlank()) return java.util.Collections.emptyList();
+        String like = q.toLowerCase();
+        return productRepository.findAll().stream()
+                .map(Product::getName)
+                .filter(name -> name != null && name.toLowerCase().contains(like))
+                .distinct()
+                .limit(limit)
+                .toList();
     }
 
     public Optional<Product> getProductById(Long id) {

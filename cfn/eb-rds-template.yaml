@@ -1,0 +1,161 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  CloudFormation template to create an Elastic Beanstalk Application + Environment
+  and a MySQL RDS instance. You must upload your application ZIP (catchy-eb-deploy.zip)
+  to S3 and provide the S3 bucket/key when launching this stack.
+
+Parameters:
+  ApplicationName:
+    Type: String
+    Default: catchy
+    Description: Elastic Beanstalk application name
+
+  EnvironmentName:
+    Type: String
+    Default: catchy-env
+
+  S3Bucket:
+    Type: String
+    Description: S3 bucket where the EB ZIP (SourceBundle) is uploaded
+
+  S3Key:
+    Type: String
+    Description: S3 key (path) to the ZIP, e.g. catchy-eb-deploy.zip
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC for the environment and RDS
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: At least two subnet IDs (private) for the RDS DB subnet group and EB
+
+  DBName:
+    Type: String
+    Default: catchydb
+
+  DBUsername:
+    Type: String
+    Default: catchyuser
+
+  DBPassword:
+    Type: String
+    NoEcho: true
+    Description: Master user password for the RDS DB
+
+  DBInstanceClass:
+    Type: String
+    Default: db.t3.micro
+    Description: RDS instance class
+
+  DBAllocatedStorage:
+    Type: Number
+    Default: 20
+    Description: RDS allocated storage (GB)
+
+  EBInstanceType:
+    Type: String
+    Default: t3.small
+    Description: EC2 instance type used by Elastic Beanstalk
+
+Resources:
+  EBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Elastic Beanstalk instances
+      VpcId: !Ref VpcId
+
+  RdsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for RDS allowing access from EB
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref EBSecurityGroup
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for RDS
+      SubnetIds: !Ref SubnetIds
+
+  RdsInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: !Ref DBName
+      AllocatedStorage: !Ref DBAllocatedStorage
+      DBInstanceClass: !Ref DBInstanceClass
+      Engine: mysql
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      VPCSecurityGroups:
+        - !GetAtt RdsSecurityGroup.GroupId
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      PubliclyAccessible: false
+
+  ElasticBeanstalkApplication:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      ApplicationName: !Ref ApplicationName
+      Description: Catchy Spring Boot application
+
+  ElasticBeanstalkAppVersion:
+    Type: AWS::ElasticBeanstalk::ApplicationVersion
+    Properties:
+      ApplicationName: !Ref ElasticBeanstalkApplication
+      Description: Application version created from S3 bundle
+      SourceBundle:
+        S3Bucket: !Ref S3Bucket
+        S3Key: !Ref S3Key
+      VersionLabel: !Sub "${AWS::StackName}-${AWS::Timestamp}"
+
+  ElasticBeanstalkEnvironment:
+    Type: AWS::ElasticBeanstalk::Environment
+    DependsOn:
+      - RdsInstance
+    Properties:
+      ApplicationName: !Ref ElasticBeanstalkApplication
+      EnvironmentName: !Ref EnvironmentName
+      VersionLabel: !Ref ElasticBeanstalkAppVersion
+      SolutionStackName: "64bit Amazon Linux 2 v3.6.7 running Corretto 17"
+      OptionSettings:
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: InstanceType
+          Value: !Ref EBInstanceType
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: SecurityGroups
+          Value: !Ref EBSecurityGroup
+        - Namespace: aws:ec2:vpc
+          OptionName: VPCId
+          Value: !Ref VpcId
+        - Namespace: aws:ec2:vpc
+          OptionName: Subnets
+          Value: !Join [",", !Ref SubnetIds]
+        - Namespace: aws:ec2:vpc
+          OptionName: ELBSubnets
+          Value: !Join [",", !Ref SubnetIds]
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SPRING_DATASOURCE_URL
+          Value: !Sub "jdbc:mysql://${RdsInstance.Endpoint.Address}:${RdsInstance.Endpoint.Port}/${DBName}"
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SPRING_DATASOURCE_USERNAME
+          Value: !Ref DBUsername
+        - Namespace: aws:elasticbeanstalk:application:environment
+          OptionName: SPRING_DATASOURCE_PASSWORD
+          Value: !Ref DBPassword
+
+Outputs:
+  ApplicationName:
+    Description: Elastic Beanstalk application name
+    Value: !Ref ElasticBeanstalkApplication
+
+  EnvironmentNameOut:
+    Description: Elastic Beanstalk environment name
+    Value: !Ref ElasticBeanstalkEnvironment
+
+  URL:
+    Description: URL of the Elastic Beanstalk environment
+    Value: !Fn GetAtt [ElasticBeanstalkEnvironment, EndpointURL]

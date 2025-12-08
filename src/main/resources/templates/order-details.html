@@ -14,6 +14,14 @@
                 <li><a href="/">Home</a></li>
                 <li><a href="/products">Products</a></li>
                 <li><a href="/orders">My Orders</a></li>
+                <li><a href="/profile">My Profile</a></li>
+                <li><a href="/addresses">Manage Addresses</a></li>
+                <li th:if="${!#authorization.expression('hasRole(''VENDOR'')')}">
+                    <a href="/vendor/register">Become Vendor</a>
+                </li>
+                <li th:if="${#authorization.expression('hasRole(''VENDOR'')')}">
+                    <a href="/vendor/dashboard">Vendor Dashboard</a>
+                </li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
@@ -22,7 +30,7 @@
     <div class="container">
         <h2>Order Details #<span th:text="${order.id}"></span></h2>
         <p><strong>Order Date:</strong> <span th:text="${#temporals.format(order.orderDate, 'yyyy-MM-dd HH:mm')}"></span></p>
-        <p><strong>Total Price:</strong> $<span th:text="${#numbers.formatDecimal(order.totalPrice, 1, 2)}"></span></p>
+        <p><strong>Total Price:</strong> <span th:text="${currencySymbol}"></span><span th:text="${#numbers.formatDecimal(order.totalPrice, 1, 2)}"></span></p>
         
         <h3 style="margin-top: 2rem;">Order Items</h3>
         <div th:each="orderItem : ${orderItems}" class="cart-item">
@@ -31,11 +39,11 @@
             <div class="cart-item-details">
                 <h3 th:text="${orderItem.product.name}"></h3>
                 <p>Quantity: <span th:text="${orderItem.quantity}"></span></p>
-                <p>Price per unit: $<span th:text="${#numbers.formatDecimal(orderItem.price / orderItem.quantity, 1, 2)}"></span></p>
+                <p>Price per unit: <span th:text="${currencySymbol}"></span><span th:text="${#numbers.formatDecimal(orderItem.price / orderItem.quantity, 1, 2)}"></span></p>
             </div>
             <div style="margin-left: auto; text-align: right;">
                 <div class="cart-item-price">
-                    $<span th:text="${#numbers.formatDecimal(orderItem.price, 1, 2)}"></span>
+                    <span th:text="${currencySymbol}"></span><span th:text="${#numbers.formatDecimal(orderItem.price, 1, 2)}"></span>
                 </div>
             </div>
         </div>

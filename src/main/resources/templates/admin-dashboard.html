@@ -3,6 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Admin Dashboard (placeholder)</h1>
+    <p>Site-wide analytics, user and vendor management.</p>
+</div>
+</body>
+</html>
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Catchy</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
@@ -81,7 +96,7 @@
                         <td th:text="${product.id}"></td>
                         <td th:text="${product.name}"></td>
                         <td th:text="${product.category}"></td>
-                        <td>$<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></span></td>
+                        <td><span th:text="${currencySymbol}"></span><span th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></span></td>
                         <td th:text="${product.stock}"></td>
                         <td>
                             <button class="btn btn-danger" 
@@ -131,7 +146,7 @@
                     <tr th:each="order : ${orders}">
                         <td th:text="${order.id}"></td>
                         <td th:text="${order.user.name + ' (' + order.user.email + ')'}"></td>
-                        <td>$<span th:text="${#numbers.formatDecimal(order.totalPrice, 1, 2)}"></span></td>
+                        <td><span th:text="${currencySymbol}"></span><span th:text="${#numbers.formatDecimal(order.totalPrice, 1, 2)}"></span></td>
                         <td th:text="${#temporals.format(order.orderDate, 'yyyy-MM-dd HH:mm')}"></td>
                     </tr>
                 </tbody>

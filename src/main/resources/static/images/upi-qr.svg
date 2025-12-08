@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+  <rect width="100%" height="100%" fill="#000" />
+  <rect x="40" y="40" width="560" height="560" fill="#fff" rx="8" />
+  <g font-family="Arial, Helvetica, sans-serif" text-anchor="middle">
+    <text x="320" y="300" font-size="20" fill="#000">UPI QR placeholder</text>
+    <text x="320" y="340" font-size="16" fill="#444">Replace with your real QR image</text>
+  </g>
+  <g transform="translate(160,380)">
+    <rect x="0" y="0" width="320" height="120" rx="8" fill="#f5f5f5" />
+    <text x="160" y="38" font-size="18" fill="#222" text-anchor="middle">POTRU CHANDU KIRAN</text>
+    <text x="160" y="70" font-size="14" fill="#555" text-anchor="middle">PhonePe / UPI</text>
+  </g>
+</svg>

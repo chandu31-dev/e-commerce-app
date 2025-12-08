@@ -16,6 +16,13 @@
                 <li><a href="/cart">Cart (<span id="cart-count">0</span>)</a></li>
                 <li><a href="/orders">My Orders</a></li>
                 <li><a href="/profile">My Profile</a></li>
+                <li><a href="/addresses">Manage Addresses</a></li>
+                <li th:if="${!#authorization.expression('hasRole(''VENDOR'')')}">
+                    <a href="/vendor/register">Become Vendor</a>
+                </li>
+                <li th:if="${#authorization.expression('hasRole(''VENDOR'')')}">
+                    <a href="/vendor/dashboard">Vendor Dashboard</a>
+                </li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>

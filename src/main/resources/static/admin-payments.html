@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Admin - Payments</title>
+  <style>body{font-family:Arial;margin:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:8px;text-align:left}</style>
+</head>
+<body>
+  <h1>Payments (Admin)</h1>
+  <div>
+    <button id="reload">Reload</button>
+  </div>
+  <div id="msg"></div>
+  <table id="payments">
+    <thead><tr><th>ID</th><th>Order</th><th>User</th><th>Amount</th><th>Currency</th><th>Method</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function load(){
+      const res = await fetch('/api/admin/payments');
+      if(!res.ok){document.getElementById('msg').innerText='Failed to load';return}
+      const data = await res.json();
+      const tbody = document.querySelector('#payments tbody'); tbody.innerHTML='';
+      data.forEach(p=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${p.id}</td><td>${p.orderId}</td><td>${p.userId||''}</td><td>${p.amount}</td><td>${p.currency}</td><td>${p.method||''}</td><td>${p.status||''}</td><td><button onclick="manual(${p.id})">Manual Settle</button></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    async function manual(id){
+      const txn = 'MANUAL-'+id + '-' + Date.now();
+      const res = await fetch('/api/admin/payments/manual-settle/'+id+'?txn='+encodeURIComponent(txn),{method:'POST'});
+      if(res.ok){alert('Settled'); load();} else alert('Failed');
+    }
+    document.getElementById('reload').addEventListener('click',load);
+    load();
+  </script>
+</body>
+</html>

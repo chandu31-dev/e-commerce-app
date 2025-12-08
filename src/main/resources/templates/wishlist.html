@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <title>Wishlist</title>
+  <script src="/js/wishlist.js"></script>
+</head>
+<body>
+  <h1>Your Wishlist</h1>
+  <div id="message" style="color:darkred;margin-bottom:12px;"></div>
+  <div id="wishlist-container"></div>
+  <div id="wishlist-pagination" style="margin-top:12px; display:flex; align-items:center; gap:8px;">
+    <button id="wish-prev" style="display:none;">◀ Prev</button>
+    <span id="wish-page-info"></span>
+    <button id="wish-next" style="display:none;">Next ▶</button>
+  </div>
+  <p><a href="/">Continue shopping</a></p>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      if (typeof loadWishlist === 'function') loadWishlist(0);
+      const prev = document.getElementById('wish-prev');
+      const next = document.getElementById('wish-next');
+      prev && prev.addEventListener('click', () => { if(window._wishPage>0) loadWishlist(window._wishPage-1); });
+      next && next.addEventListener('click', () => { loadWishlist(window._wishPage+1); });
+    });
+  </script>
+</body>
+</html>
+ 

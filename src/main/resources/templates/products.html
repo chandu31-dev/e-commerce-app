@@ -25,6 +25,15 @@
                 <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
                     <a href="/profile">My Profile</a>
                 </li>
+                <li th:if="${#authentication != null && #authentication.isAuthenticated()}">
+                    <a href="/addresses">Manage Addresses</a>
+                </li>
+                <li th:if="${!#authorization.expression('hasRole(''VENDOR'')')}">
+                    <a href="/vendor/register">Become Vendor</a>
+                </li>
+                <li th:if="${#authorization.expression('hasRole(''VENDOR'')')}">
+                    <a href="/vendor/dashboard">Vendor Dashboard</a>
+                </li>
                 <li th:if="${#authorization.expression('hasRole(''ADMIN'')')}">
                     <a href="/admin/dashboard">Admin</a>
                 </li>
@@ -63,9 +72,12 @@
                 <div class="product-info">
                     <div class="product-name" th:text="${product.name}"></div>
                     <div class="product-category" th:text="${product.category}"></div>
-                    <div class="product-price">$<span th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></span></div>
-                    <button class="btn btn-primary" 
+                    <div class="product-price"><span th:text="${currencySymbol}"></span><span th:text="${#numbers.formatDecimal(product.price, 1, 2)}"></span></div>
+                        <button class="btn btn-primary" 
                             th:onclick="'event.stopPropagation(); addToCart(' + ${product.id} + ')'">Add to Cart</button>
+                            <button class="btn btn-secondary wishlist-btn" 
+                                th:attr="data-pid=${product.id}"
+                                th:onclick="'event.stopPropagation(); addToWishlist(' + ${product.id} + ')'" style="margin-left:8px;">♥ Wishlist</button>
                 </div>
             </div>
         </div>

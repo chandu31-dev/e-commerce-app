@@ -29,20 +29,6 @@ public class AuthService {
     @Autowired
     private AuthenticationManager authenticationManager;
 
-    @Autowired
-    private TokenService tokenService;
-
-    @Autowired
-    private MailService mailService;
-
-    public java.util.Optional<com.catchy.model.User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
-    }
-
-    public com.catchy.model.User saveUser(com.catchy.model.User user) {
-        return userRepository.save(user);
-    }
-
     @Transactional
     public User signup(SignupRequest signupRequest) {
         if (userRepository.existsByEmail(signupRequest.getEmail())) {
@@ -53,20 +39,23 @@ public class AuthService {
         user.setName(signupRequest.getName());
         user.setEmail(signupRequest.getEmail());
         user.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
-        user.setRole(User.Role.USER);
-        user.setVerified(false);
+        String roleStr = signupRequest.getRole();
+        User.Role role = User.Role.USER;
+        if (roleStr != null) {
+            try {
+                role = User.Role.valueOf(roleStr.toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+                role = User.Role.USER;
+            }
+        }
+        user.setRole(role);
+        // Enable all user accounts immediately on signup so they can log in
+        user.setEnabled(true);
 
-        return userRepository.save(user);
-    }
+        User saved = userRepository.save(user);
+        // No verification token/email: accounts enabled immediately for deployment convenience
 
-    public void signupAndSendVerification(SignupRequest signupRequest, String appUrl) {
-        User user = signup(signupRequest);
-        // create token and send verification email
-        var vt = tokenService.createVerificationTokenForUser(user);
-        String link = appUrl + "/verify?token=" + vt.getToken();
-        String subject = "Verify your Catchy account";
-        String text = "Please verify your account by clicking the link: " + link;
-        mailService.sendVerificationEmail(user.getEmail(), subject, text);
+        return saved;
     }
 
     public String login(LoginRequest loginRequest) {
@@ -82,13 +71,33 @@ public class AuthService {
     }
 
     public User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return null;
+            }
+            String email = authentication.getName();
+            return userRepository.findByEmail(email).orElse(null);
+        } catch (Exception e) {
             return null;
         }
-        String email = authentication.getName();
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
     }
+
+    @Transactional
+    public User saveUser(User user) {
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public void updatePassword(User user, String rawPassword) {
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        userRepository.save(user);
+    }
+
+    @Autowired(required = false)
+    private TokenService tokenService;
+
+    @Autowired(required = false)
+    private MailService mailService;
 }
 

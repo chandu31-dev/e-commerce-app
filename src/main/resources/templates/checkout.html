@@ -5,6 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout - Catchy</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .checkout-container {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .order-summary {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+        }
+
+        .payment-section {
+            flex: 1;
+            background: white;
+            padding: 2rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .order-total {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid #dee2e6;
+        }
+
+        .payment-methods {
+            margin: 2rem 0;
+        }
+
+        .method-option {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border: 2px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .method-option:hover {
+            border-color: #007bff;
+            background: #f8f9fa;
+        }
+
+        .method-option input[type="radio"]:checked ~ label {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .method-option.active {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+
+        .stripe-input {
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            margin: 1rem 0;
+            font-size: 1rem;
+        }
+
+        .currency-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-left: 0.5rem;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: #dc3545;
+            padding: 1rem;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .success-message {
+            color: #155724;
+            padding: 1rem;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .checkout-container {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -14,25 +146,399 @@
                 <li><a href="/">Home</a></li>
                 <li><a href="/products">Products</a></li>
                 <li><a href="/cart">Cart</a></li>
+                <li><a href="/orders">My Orders</a></li>
+                <li><a href="/profile">My Profile</a></li>
+                <li><a href="/addresses">Manage Addresses</a></li>
+                <li th:if="${!#authorization.expression('hasRole(''VENDOR'')')}">
+                    <a href="/vendor/register">Become Vendor</a>
+                </li>
+                <li th:if="${#authorization.expression('hasRole(''VENDOR'')')}">
+                    <a href="/vendor/dashboard">Vendor Dashboard</a>
+                </li>
                 <li><a href="/logout">Logout</a></li>
             </ul>
         </nav>
     </header>
 
     <div class="container">
-        <h2>Order Confirmation</h2>
-        <div class="message message-success">
-            <h3>Order Placed Successfully!</h3>
-            <p>Thank you for your purchase. Your order has been confirmed.</p>
-            <p>You will receive an email confirmation shortly.</p>
-        </div>
-        <div style="margin-top: 2rem;">
-            <a href="/orders" class="btn btn-primary">View My Orders</a>
-            <a href="/products" class="btn" style="margin-left: 1rem; background: #6c757d; color: white;">Continue Shopping</a>
+        <h1>Checkout <span class="currency-badge">₹ INR</span></h1>
+        
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <div class="checkout-container">
+            <!-- Order Summary -->
+            <div class="order-summary">
+                <h3>Order Summary</h3>
+                <div id="orderItems">
+                    <!-- Items will be populated by JavaScript -->
+                </div>
+                <div class="order-total">
+                    Total: <span id="totalAmount">₹ 0.00</span>
+                </div>
+                <div style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                    <p>✓ Secure payment with Stripe</p>
+                    <p>✓ Indian Rupees (₹) pricing</p>
+                    <p>✓ All major payment methods accepted</p>
+                </div>
+            </div>
+
+            <!-- Payment Form -->
+            <div class="payment-section">
+                <h3>Payment Information</h3>
+                
+                <form id="paymentForm">
+                    <input type="hidden" id="orderId" th:value="${order?.id}" />
+                    <input type="hidden" id="amount" th:value="${order?.totalPrice}" />
+
+                    <!-- Payment Method Options -->
+                    <div class="payment-methods" style="margin-bottom:1rem;">
+                        <div id="methodCard" class="method-option active" data-method="CARD">
+                            <input type="radio" name="paymentMethod" id="pmCard" checked />
+                            <label style="margin-left:0.5rem;">Pay with Card</label>
+                        </div>
+                        <div id="methodUpi" class="method-option" data-method="UPI" style="margin-top:0.5rem;">
+                            <input type="radio" name="paymentMethod" id="pmUpi" />
+                            <label style="margin-left:0.5rem;">Pay with UPI</label>
+                        </div>
+                    </div>
+                    <!-- Card Element -->
+                    <div id="card-element" class="stripe-input"></div>
+                    <div id="card-errors" class="error-message" style="margin-top: 1rem;"></div>
+
+                    <!-- Button -->
+                    <button type="submit" id="submitBtn" class="btn btn-primary" style="width: 100%; margin-top: 2rem;">
+                        <span id="submitBtnText">Pay ₹<span id="displayAmount">0.00</span></span>
+                    </button>
+
+                    <!-- UPI Section (hidden by default) -->
+                    <div id="upiSection" style="display:none; margin-top:1rem;">
+                        <div style="background:#f0f8ff; padding:1.5rem; border-radius:8px; text-align:center;">
+                            <p style="margin-bottom:0.5rem; font-weight:bold; font-size:1.1rem;">Pay with UPI</p>
+                            <p style="margin:0.5rem 0; font-size:0.95rem;">UPI ID (VPA):</p>
+                            <div style="background:white; padding:0.75rem; border:2px solid #007bff; border-radius:4px; font-family:monospace; font-weight:bold; margin:0.5rem 0;">
+                                <span id="upiIdDisplay">chandukiran2513@ybl</span>
+                            </div>
+                            <p style="font-size:0.9rem; color:#666; margin-top:0.75rem;">
+                                Click button below to open your UPI app, or manually enter the UPI ID above in your preferred payment app.
+                            </p>
+                            <button type="button" id="upiOpenBtn" class="btn btn-primary" style="width:100%; margin-top:1rem;">
+                                Open in UPI App
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="loading-spinner" id="loadingSpinner">
+                        <div class="spinner"></div>
+                        <p>Processing payment...</p>
+                    </div>
+
+                    <button type="button" id="upiPaidBtn" class="btn btn-success" style="width:100%; margin-top:0.5rem; display:none;">
+                        I Have Paid (UPI)
+                    </button>
+                </form>
+
+                <div style="margin-top: 2rem; font-size: 0.85rem; color: #666;">
+                    <p><strong>Test Card Numbers:</strong></p>
+                    <p>• Visa: 4242 4242 4242 4242</p>
+                    <p>• Mastercard: 5555 5555 5555 4444</p>
+                    <p>Use any future expiry date and 3-digit CVC</p>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Stripe.js Library -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <script th:inline="javascript">
+        // Initialize Stripe
+        const stripe = Stripe('[[${stripePublishableKey}]]');
+        const elements = stripe.elements();
+        const cardElement = elements.create('card', {
+            style: {
+                base: {
+                    fontSize: '16px',
+                    color: '#424242',
+                    '::placeholder': {
+                        color: '#9ca3af'
+                    }
+                },
+                invalid: {
+                    color: '#dc3545'
+                }
+            }
+        });
+
+        cardElement.mount('#card-element');
+
+        // Handle card errors
+        cardElement.addEventListener('change', (event) => {
+            const displayError = document.getElementById('card-errors');
+            if (event.error) {
+                displayError.textContent = event.error.message;
+                displayError.style.display = 'block';
+            } else {
+                displayError.style.display = 'none';
+            }
+        });
+
+        // Get order summary from server
+        async function loadOrderSummary() {
+            const orderId = document.getElementById('orderId').value;
+            if (!orderId) return;
+
+            try {
+                const response = await fetch(`/api/orders/${orderId}`);
+                const order = await response.json();
+                
+                // Display items
+                const itemsContainer = document.getElementById('orderItems');
+                itemsContainer.innerHTML = '';
+                
+                if (order.orderItems && order.orderItems.length > 0) {
+                    order.orderItems.forEach(item => {
+                        // `item.price` is stored as the line total (unitPrice * quantity) in the backend.
+                        // Do not multiply by quantity again in the UI — display the stored line total.
+                        const lineTotal = parseFloat(item.price) || (parseFloat(item.unitPrice || 0) * (item.quantity || 1));
+                        itemsContainer.innerHTML += `
+                            <div class="order-item">
+                                <span>${item.productName} x${item.quantity}</span>
+                                <span>₹ ${lineTotal.toFixed(2)}</span>
+                            </div>
+                        `;
+                    });
+                }
+                
+                // Update total
+                const totalAmount = parseFloat(order.totalPrice) || 0;
+                document.getElementById('totalAmount').textContent = `₹ ${totalAmount.toFixed(2)}`;
+                document.getElementById('displayAmount').textContent = totalAmount.toFixed(2);
+                document.getElementById('amount').value = totalAmount;
+            } catch (error) {
+                console.error('Error loading order:', error);
+            }
+        }
+
+        // Handle form submission
+        const form = document.getElementById('paymentForm');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const orderId = document.getElementById('orderId').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+
+            if (!orderId || amount <= 0) {
+                showError('Invalid order or amount');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('submitBtn').disabled = true;
+
+            try {
+                // Step 1: Create payment intent on server
+                const intentResponse = await fetch('/api/payments/create-intent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        orderId: parseInt(orderId),
+                        amountInr: amount
+                    })
+                });
+
+                const intentData = await intentResponse.json();
+
+                if (!intentData.success || !intentData.clientSecret) {
+                    showError(intentData.message || 'Failed to create payment intent');
+                    return;
+                }
+
+                // Step 2: Confirm payment with Stripe
+                const result = await stripe.confirmCardPayment(intentData.clientSecret, {
+                    payment_method: {
+                        card: cardElement,
+                        billing_details: {
+                            // You can add billing details here if needed
+                        }
+                    }
+                });
+
+                if (result.error) {
+                    showError(result.error.message);
+                } else if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+                    // Payment succeeded at Stripe — confirm on server side before showing success
+                    try {
+                        const confirmResp = await fetch('/api/payments/confirm/' + result.paymentIntent.id, {
+                            method: 'POST'
+                        });
+
+                        if (!confirmResp.ok) {
+                            const errJson = await confirmResp.json().catch(()=>null);
+                            const msg = errJson && errJson.message ? errJson.message : 'Server confirmation failed';
+                            showError(msg);
+                            return;
+                        }
+
+                        const confirmJson = await confirmResp.json().catch(()=>null);
+                        // If server confirms success, show success and redirect
+                        if (confirmJson && (confirmJson.success === true || confirmJson.status === 'SUCCEEDED' || confirmJson.status === 'SUCCESS')) {
+                            showSuccess('Payment successful! Your order has been placed.');
+                            setTimeout(() => { window.location.href = '/orders/' + orderId; }, 1500);
+                        } else {
+                            showError('Payment succeeded but server did not confirm the order.');
+                        }
+                    } catch (e) {
+                        showError('Error confirming payment on server: ' + e.message);
+                    }
+                }
+            } catch (error) {
+                showError('Error processing payment: ' + error.message);
+            } finally {
+                // Hide loading
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+            }
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+
+        // Load order summary on page load
+        document.addEventListener('DOMContentLoaded', loadOrderSummary);
+    </script>
+
     <script th:src="@{/js/main.js}"></script>
+
+    <script th:inline="javascript">
+        // Payment method toggles and UPI handling
+        (function(){
+            const pmCard = document.getElementById('pmCard');
+            const pmUpi = document.getElementById('pmUpi');
+            const methodCardDiv = document.getElementById('methodCard');
+            const methodUpiDiv = document.getElementById('methodUpi');
+            const cardElementDiv = document.getElementById('card-element');
+            const upiSection = document.getElementById('upiSection');
+            const submitBtn = document.getElementById('submitBtn');
+            const upiPaidBtn = document.getElementById('upiPaidBtn');
+            const upiOpenBtn = document.getElementById('upiOpenBtn');
+            const upiIdDisplay = document.getElementById('upiIdDisplay');
+
+            function setActive(method){
+                if(method === 'UPI'){
+                    methodUpiDiv.classList.add('active');
+                    methodCardDiv.classList.remove('active');
+                    cardElementDiv.style.display = 'none';
+                    upiSection.style.display = 'block';
+                    submitBtn.style.display = 'none';
+                    upiPaidBtn.style.display = 'block';
+                    // fetch UPI ID for order
+                    fetchUpiForOrder();
+                } else {
+                    methodCardDiv.classList.add('active');
+                    methodUpiDiv.classList.remove('active');
+                    cardElementDiv.style.display = 'block';
+                    upiSection.style.display = 'none';
+                    submitBtn.style.display = 'block';
+                    upiPaidBtn.style.display = 'none';
+                }
+            }
+
+            methodCardDiv.addEventListener('click', ()=>{ pmCard.checked=true; setActive('CARD'); });
+            methodUpiDiv.addEventListener('click', ()=>{ pmUpi.checked=true; setActive('UPI'); });
+
+            let currentUpiLink = null;
+            let currentPaymentId = null;
+
+            async function fetchUpiForOrder(){
+                const orderId = document.getElementById('orderId').value;
+                const amount = parseFloat(document.getElementById('amount').value || '0');
+                if(!orderId || amount <= 0) return;
+
+                try {
+                    // Create internal payment record
+                    const createResp = await fetch('/api/internal-payments/initiate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: parseInt(orderId), amount: amount, currency: 'INR', method: 'UPI' })
+                    });
+
+                    // Try to get payment id from Location header
+                    let paymentId = null;
+                    const location = createResp.headers.get('Location') || createResp.headers.get('location');
+                    if(location){
+                        const parts = location.split('/');
+                        paymentId = parts[parts.length-1];
+                    } else {
+                        const json = await createResp.json().catch(()=>null);
+                        if(json && (json.id || json.paymentId)) paymentId = json.id || json.paymentId;
+                    }
+
+                    if(!paymentId){
+                        console.warn('Could not obtain payment id');
+                        return;
+                    }
+
+                    // persist for verification button
+                    currentPaymentId = paymentId;
+
+                    const upiResp = await fetch(`/api/internal-payments/${paymentId}/upi`);
+                    if(!upiResp.ok) throw new Error('UPI fetch failed');
+                    const upiJson = await upiResp.json();
+                    if(upiJson.upiId) upiIdDisplay.textContent = upiJson.upiId;
+                    if(upiJson.upiLink) currentUpiLink = upiJson.upiLink;
+                } catch (e){
+                    console.error('Error fetching UPI:', e);
+                }
+            }
+
+            // Handle Open in UPI App button
+            upiOpenBtn.addEventListener('click', ()=>{
+                if(currentUpiLink){
+                    window.location.href = currentUpiLink;
+                } else {
+                    alert('UPI link not available. Please manually enter the UPI ID in your payment app.');
+                }
+            });
+
+            // Handle UPI paid button - verify payment status with the server before redirecting
+            upiPaidBtn.addEventListener('click', async ()=>{
+                const orderId = document.getElementById('orderId').value;
+                if(!currentPaymentId){
+                    showError('No payment was initiated for this order.');
+                    return;
+                }
+
+                try {
+                    const resp = await fetch('/api/internal-payments/' + currentPaymentId);
+                    if(!resp.ok) { showError('Could not fetch payment status'); return; }
+                    const ledger = await resp.json();
+                    if(ledger && ledger.status && (ledger.status === 'SUCCESS' || ledger.status === 'SUCCEEDED')){
+                        showSuccess('Payment successful! Your order has been placed.');
+                        setTimeout(() => { window.location.href = '/orders/' + orderId; }, 1500);
+                    } else {
+                        showError('Payment not completed yet. Please check your payment app and try again.');
+                    }
+                } catch (e){
+                    showError('Error verifying payment: ' + e.message);
+                }
+            });
+
+        })();
+    </script>
 </body>
 </html>
-

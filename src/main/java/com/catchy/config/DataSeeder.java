@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +13,6 @@ import com.catchy.repository.ProductRepository;
 import com.catchy.repository.UserRepository;
 
 @Component
-@Profile("!test")
 public class DataSeeder implements CommandLineRunner {
     @Autowired
     private UserRepository userRepository;
@@ -27,15 +25,27 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        // Create admin user if not exists
-        if (userRepository.findByEmail("admin@catchy.com").isEmpty()) {
+        // Remove legacy seeded admin (if present) and create new admin account
+        String legacyAdminEmail = "admin@catchy.com";
+        userRepository.findByEmail(legacyAdminEmail).ifPresent(u -> {
+            try {
+                userRepository.delete(u);
+                System.out.println("Removed legacy admin account: " + legacyAdminEmail);
+            } catch (Exception ex) {
+                System.out.println("Failed to remove legacy admin account: " + ex.getMessage());
+            }
+        });
+
+        String newAdminEmail = "chandukiranpotru0@gmail.com";
+        String newAdminPassword = "admin123"; // change after first login for security
+        if (userRepository.findByEmail(newAdminEmail).isEmpty()) {
             User admin = new User();
             admin.setName("Admin User");
-            admin.setEmail("admin@catchy.com");
-            admin.setPassword(passwordEncoder.encode("admin123"));
+            admin.setEmail(newAdminEmail);
+            admin.setPassword(passwordEncoder.encode(newAdminPassword));
             admin.setRole(User.Role.ADMIN);
             userRepository.save(admin);
-            System.out.println("Admin user created: admin@catchy.com / admin123");
+            System.out.println("Admin user created: " + newAdminEmail + " / " + newAdminPassword);
         }
 
         // Create test user if not exists
@@ -56,7 +66,7 @@ public class DataSeeder implements CommandLineRunner {
                 "iPhone 15 Pro",
                 "Latest iPhone with A17 Pro chip, 48MP camera, and titanium design",
                 "Electronics",
-                new BigDecimal("999.99"),
+                new BigDecimal("82999.00"),
                 "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=500",
                 50
             ));
@@ -65,7 +75,7 @@ public class DataSeeder implements CommandLineRunner {
                 "Samsung Galaxy S24",
                 "Premium Android smartphone with AI features and advanced camera system",
                 "Electronics",
-                new BigDecimal("899.99"),
+                new BigDecimal("74999.00"),
                 "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500",
                 40
             ));
@@ -74,7 +84,7 @@ public class DataSeeder implements CommandLineRunner {
                 "MacBook Pro 16\"",
                 "Powerful laptop with M3 chip, perfect for professionals and creatives",
                 "Electronics",
-                new BigDecimal("2499.99"),
+                new BigDecimal("207499.00"),
                 "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=500",
                 25
             ));
@@ -83,7 +93,7 @@ public class DataSeeder implements CommandLineRunner {
                 "Sony WH-1000XM5 Headphones",
                 "Premium noise-cancelling wireless headphones with exceptional sound quality",
                 "Electronics",
-                new BigDecimal("399.99"),
+                new BigDecimal("33199.00"),
                 "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500",
                 60
             ));
@@ -93,7 +103,7 @@ public class DataSeeder implements CommandLineRunner {
                 "Classic Leather Jacket",
                 "Premium genuine leather jacket, timeless design, perfect fit",
                 "Fashion",
-                new BigDecimal("299.99"),
+                new BigDecimal("24999.00"),
                 "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=500",
                 30
             ));
@@ -102,7 +112,7 @@ public class DataSeeder implements CommandLineRunner {
                 "Designer Sunglasses",
                 "Stylish UV protection sunglasses with polarized lenses",
                 "Fashion",
-                new BigDecimal("149.99"),
+                new BigDecimal("12499.00"),
                 "https://images.unsplash.com/photo-1572635196237-14b3f281fbcf?w=500",
                 75
             ));
@@ -111,7 +121,7 @@ public class DataSeeder implements CommandLineRunner {
                 "Running Shoes",
                 "Comfortable athletic shoes with advanced cushioning technology",
                 "Fashion",
-                new BigDecimal("129.99"),
+                new BigDecimal("10799.00"),
                 "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500",
                 100
             ));
@@ -121,7 +131,7 @@ public class DataSeeder implements CommandLineRunner {
                 "The Great Gatsby",
                 "Classic American novel by F. Scott Fitzgerald",
                 "Books",
-                new BigDecimal("12.99"),
+                new BigDecimal("399.00"),
                 "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500",
                 200
             ));
@@ -130,7 +140,7 @@ public class DataSeeder implements CommandLineRunner {
                 "Clean Code",
                 "A Handbook of Agile Software Craftsmanship by Robert C. Martin",
                 "Books",
-                new BigDecimal("49.99"),
+                new BigDecimal("1599.00"),
                 "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500",
                 150
             ));
@@ -139,7 +149,7 @@ public class DataSeeder implements CommandLineRunner {
                 "The Pragmatic Programmer",
                 "Your Journey to Mastery by Andrew Hunt and David Thomas",
                 "Books",
-                new BigDecimal("44.99"),
+                new BigDecimal("1499.00"),
                 "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500",
                 120
             ));
@@ -149,7 +159,7 @@ public class DataSeeder implements CommandLineRunner {
                 "Smart LED Light Bulbs",
                 "WiFi enabled LED bulbs with color changing capabilities",
                 "Home & Garden",
-                new BigDecimal("29.99"),
+                new BigDecimal("2499.00"),
                 "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500",
                 80
             ));
@@ -158,7 +168,7 @@ public class DataSeeder implements CommandLineRunner {
                 "Indoor Plant Set",
                 "Beautiful collection of 5 low-maintenance indoor plants",
                 "Home & Garden",
-                new BigDecimal("79.99"),
+                new BigDecimal("6699.00"),
                 "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500",
                 45
             ));
@@ -168,7 +178,7 @@ public class DataSeeder implements CommandLineRunner {
                 "Yoga Mat Premium",
                 "Eco-friendly, non-slip yoga mat with carrying strap",
                 "Sports",
-                new BigDecimal("39.99"),
+                new BigDecimal("3299.00"),
                 "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=500",
                 90
             ));
@@ -177,7 +187,7 @@ public class DataSeeder implements CommandLineRunner {
                 "Dumbbell Set",
                 "Adjustable dumbbell set, perfect for home workouts",
                 "Sports",
-                new BigDecimal("199.99"),
+                new BigDecimal("16599.00"),
                 "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=500",
                 35
             ));

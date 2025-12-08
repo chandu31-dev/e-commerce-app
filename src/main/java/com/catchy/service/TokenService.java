@@ -1,6 +1,7 @@
 package com.catchy.service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,52 +21,44 @@ public class TokenService {
     @Autowired
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
-    public void deleteVerificationToken(VerificationToken token) {
-        verificationTokenRepository.delete(token);
-    }
-
-    public void deletePasswordResetToken(PasswordResetToken token) {
-        passwordResetTokenRepository.delete(token);
-    }
-
-    public VerificationToken createVerificationToken(User user) {
+    public VerificationToken createVerificationTokenForUser(User user) {
         String token = UUID.randomUUID().toString();
-        VerificationToken vt = new VerificationToken(token, user, LocalDateTime.now().plusDays(2));
+        VerificationToken vt = new VerificationToken(token, user, LocalDateTime.now().plusHours(24));
         return verificationTokenRepository.save(vt);
     }
 
-    public PasswordResetToken createPasswordResetToken(User user) {
-        String token = UUID.randomUUID().toString();
-        PasswordResetToken prt = new PasswordResetToken(token, user, LocalDateTime.now().plusHours(24));
-        return passwordResetTokenRepository.save(prt);
-    }
-
     public VerificationToken validateVerificationToken(String token) {
-        return verificationTokenRepository.findByToken(token)
-                .filter(t -> t.getExpiryDate().isAfter(LocalDateTime.now()))
-                .orElse(null);
+        Optional<VerificationToken> vt = verificationTokenRepository.findByToken(token);
+        if (vt.isPresent() && vt.get().getExpiryDate().isAfter(LocalDateTime.now())) {
+            return vt.get();
+        }
+        return null;
     }
 
-    public PasswordResetToken validatePasswordResetToken(String token) {
-        return passwordResetTokenRepository.findByToken(token)
-                .filter(t -> t.getExpiryDate().isAfter(LocalDateTime.now()))
-                .orElse(null);
-    }
-
-    // Scheduled cleanup for expired tokens
-    @org.springframework.scheduling.annotation.Scheduled(fixedDelayString = "PT1H")
-    public void cleanupExpiredTokens() {
-        LocalDateTime now = LocalDateTime.now();
-        verificationTokenRepository.deleteByExpiryDateBefore(now);
-        passwordResetTokenRepository.deleteByExpiryDateBefore(now);
-    }
-
-    // create convenience method to create tokens with return types used elsewhere
-    public VerificationToken createVerificationTokenForUser(User user) {
-        return createVerificationToken(user);
+    public void deleteVerificationToken(VerificationToken token) {
+        if (token != null) verificationTokenRepository.delete(token);
     }
 
     public PasswordResetToken createPasswordResetTokenForUser(User user) {
-        return createPasswordResetToken(user);
+        String token = UUID.randomUUID().toString();
+        PasswordResetToken prt = new PasswordResetToken(token, user, LocalDateTime.now().plusHours(2));
+        return passwordResetTokenRepository.save(prt);
+    }
+
+    public PasswordResetToken validatePasswordResetToken(String token) {
+        Optional<PasswordResetToken> prt = passwordResetTokenRepository.findByToken(token);
+        if (prt.isPresent() && prt.get().getExpiryDate().isAfter(LocalDateTime.now())) {
+            return prt.get();
+        }
+        return null;
+    }
+
+    public void deletePasswordResetToken(PasswordResetToken token) {
+        if (token != null) passwordResetTokenRepository.delete(token);
+    }
+
+    public void cleanupExpiredTokens() {
+        verificationTokenRepository.deleteByExpiryDateBefore(LocalDateTime.now());
+        passwordResetTokenRepository.deleteByExpiryDateBefore(LocalDateTime.now());
     }
 }

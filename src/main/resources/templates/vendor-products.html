@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Products - Catchy Vendor</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .vendor-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .vendor-nav a {
+            padding: 0.75rem 1.5rem;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .vendor-nav a:hover {
+            background: #5568d3;
+        }
+
+        .add-product-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .products-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .product-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .product-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .product-item-name {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-item-price {
+            color: #28a745;
+            font-weight: bold;
+            margin: 0.5rem 0;
+        }
+
+        .product-controls {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .product-controls button {
+            flex: 1;
+            min-width: 80px;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🛍️ Catchy</a>
+            <ul class="nav-links">
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/vendor/dashboard">Dashboard</a></li>
+                <li><a href="/logout">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="vendor-nav">
+            <a href="/vendor/dashboard">Back to Dashboard</a>
+        </div>
+
+        <div class="add-product-section">
+            <h2>Add Product to Your Store</h2>
+            <form id="add-product-form" onsubmit="handleAddProduct(event)">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="isNew">Add New Product?</label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="checkbox" id="isNew" />
+                            <small style="color:#666;">Check to create a new product instead of selecting an existing one</small>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="existingProductGroup">
+                        <label for="productId">Select Product *</label>
+                        <select id="productId" name="productId">
+                            <option value="">Choose a product...</option>
+                            <option th:each="product : ${allProducts}" th:value="${product.id}" th:text="${product.name}"></option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="vendorPriceGroup">
+                        <label for="vendorPrice">Your Price *</label>
+                        <input type="number" id="vendorPrice" name="vendorPrice" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group" id="stockGroup">
+                        <label for="stock">Stock Quantity *</label>
+                        <input type="number" id="stock" name="stock" min="0" required value="0">
+                    </div>
+
+                    <div id="newProductFields" style="display:none; grid-column: 1 / -1; gap: 0.5rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label for="newName">Product Name *</label>
+                                <input type="text" id="newName" name="newName">
+                            </div>
+                            <div class="form-group">
+                                <label for="newCategory">Category</label>
+                                <input type="text" id="newCategory" name="newCategory">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top:8px;">
+                            <div class="form-group">
+                                <label for="newPrice">Base Price (optional)</label>
+                                <input type="number" id="newPrice" name="newPrice" step="0.01" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="newImage">Image (optional)</label>
+                                <input type="file" id="newImage" name="newImageFile" accept="image/*">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin-top:8px;">
+                            <label for="newDescription">Description</label>
+                            <textarea id="newDescription" name="newDescription" rows="2" style="width:100%;"></textarea>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: flex-end;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Add Product</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="products-section">
+            <h2>Your Products</h2>
+            <div th:if="${products.size() > 0}" class="product-list">
+                <div th:each="product : ${products}" class="product-item">
+                    <div class="product-item-name" th:text="${product.product.name}"></div>
+                    <div style="font-size: 0.9rem; color: #666;">
+                        <strong>Category:</strong> <span th:text="${product.product.category}"></span>
+                    </div>
+                    <div class="product-item-price">
+                        <span th:text="${currencySymbol}"></span><span th:text="${#numbers.formatDecimal(product.vendorPrice, 1, 2)}"></span>
+                    </div>
+                    <div style="margin: 0.5rem 0; font-size: 0.9rem;">
+                        <strong>Stock:</strong> <span th:text="${product.stock}"></span>
+                    </div>
+                    <div class="product-controls">
+                        <button th:onclick="'editStockDialog(this, ' + ${product.id} + ')'" class="btn btn-primary" style="flex: 1;">Update Stock</button>
+                        <button th:onclick="'removeProduct(this, ' + ${product.id} + ')'" class="btn btn-danger" style="flex: 1;">Remove</button>
+                    </div>
+                </div>
+            </div>
+            <p th:unless="${products.size() > 0}" style="text-align: center; color: #666; padding: 2rem;">
+                No products added yet. Add your first product above!
+            </p>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script>
+        // Toggle between existing product select and new product fields
+        document.getElementById('isNew').addEventListener('change', function(e) {
+            const checked = e.target.checked;
+            document.getElementById('newProductFields').style.display = checked ? 'block' : 'none';
+            document.getElementById('existingProductGroup').style.display = checked ? 'none' : 'block';
+            // If new product, productId shouldn't be required
+            document.getElementById('productId').required = !checked;
+            document.getElementById('newName').required = checked;
+        });
+
+        async function handleAddProduct(event) {
+            event.preventDefault();
+            const isNew = document.getElementById('isNew').checked;
+            const productId = document.getElementById('productId').value;
+            const vendorPrice = document.getElementById('vendorPrice').value;
+            const stock = document.getElementById('stock').value;
+
+            const newName = document.getElementById('newName').value;
+            const newCategory = document.getElementById('newCategory').value;
+            const newPrice = document.getElementById('newPrice').value;
+            const newImage = document.getElementById('newImage').value;
+            const newDescription = document.getElementById('newDescription').value;
+
+                try {
+                const formData = new FormData();
+                if (isNew) {
+                    formData.append('newName', newName);
+                    formData.append('newCategory', newCategory);
+                    if (newPrice) formData.append('newPrice', newPrice);
+                    const imageInput = document.getElementById('newImage');
+                    if (imageInput && imageInput.files && imageInput.files.length > 0) {
+                        formData.append('newImageFile', imageInput.files[0]);
+                    }
+                    if (newDescription) formData.append('newDescription', newDescription);
+                } else {
+                    formData.append('productId', productId);
+                }
+                formData.append('vendorPrice', vendorPrice);
+                formData.append('stock', stock);
+
+                const token = getToken();
+                const headers = {};
+
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/vendor/api/products/add`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('Product added successfully!', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showMessage(result.message || 'Error adding product', 'error');
+                }
+            } catch (error) {
+                showMessage('Error adding product', 'error');
+            }
+        }
+
+        function editStockDialog(button, vendorProductId) {
+            const newStock = prompt('Enter new stock quantity:');
+            if (newStock !== null && newStock !== '') {
+                updateStock(vendorProductId, newStock);
+            }
+        }
+
+        async function updateStock(vendorProductId, newStock) {
+            try {
+                const token = getToken();
+                const headers = {};
+
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/vendor/api/products/${vendorProductId}/stock?stock=${newStock}`, {
+                    method: 'PUT',
+                    headers: headers
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('Stock updated successfully!', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showMessage(result.message || 'Error updating stock', 'error');
+                }
+            } catch (error) {
+                showMessage('Error updating stock', 'error');
+            }
+        }
+
+        async function removeProduct(button, vendorProductId) {
+            if (!confirm('Are you sure you want to remove this product?')) {
+                return;
+            }
+
+            try {
+                const token = getToken();
+                const headers = {};
+
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch(`/vendor/api/products/${vendorProductId}`, {
+                    method: 'DELETE',
+                    headers: headers
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('Product removed successfully!', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showMessage(result.message || 'Error removing product', 'error');
+                }
+            } catch (error) {
+                showMessage('Error removing product', 'error');
+            }
+        }
+    </script>
+</body>
+</html>
