@@ -7,8 +7,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import jakarta.mail.internet.MimeMessage;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +18,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
+
+import jakarta.mail.internet.MimeMessage;
 
 @Service
 @ConditionalOnProperty(prefix = "features", name = "addresses-only", havingValue = "false", matchIfMissing = false)
@@ -234,5 +234,42 @@ public class MailService {
         } catch (Exception e) {
             logger.error("[MailService] Failed to schedule reset email to {}: {}", to, e.getMessage());
         }
+    }
+
+    public void sendAbandonedCartEmail(String to, String subject, String cartHtml, String token) {
+        if (mailSender != null && templateEngine != null) {
+            try {
+                MimeMessage mime = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(mime, "utf-8");
+                Context ctx = new Context();
+                ctx.setVariables(Map.of("body", cartHtml, "token", token));
+                String html = templateEngine.process("email/abandoned-cart", ctx);
+                helper.setTo(to);
+                if (fromAddress != null && !fromAddress.isBlank()) helper.setFrom(fromAddress);
+                helper.setSubject(subject);
+                helper.setText(html, true);
+                CompletableFuture.runAsync(() -> { try { mailSender.send(mime); } catch (Exception ex) { logger.error("[MailService] Failed to send abandoned cart email: {}", ex.getMessage()); } });
+                return;
+            } catch (Exception e) {
+                logger.warn("[MailService] HTML abandoned cart email failed, falling back: {}", e.getMessage());
+            }
+        }
+
+        if (mailSender == null) {
+            logger.info("[MailService] ABANDONED CART EMAIL to={} subject={}", to, subject);
+            logger.debug("Abandoned cart HTML: {}", cartHtml);
+            try {
+                Files.createDirectories(Path.of("target"));
+                Path out = Path.of("target", "abandoned-cart.txt");
+                Files.writeString(out, "TO: " + to + "\nSUBJECT: " + subject + "\n\n" + cartHtml + System.lineSeparator(), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (Exception e) { logger.warn("[MailService] Failed to write abandoned cart email to file: {}", e.getMessage()); }
+            return;
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        if (fromAddress != null && !fromAddress.isBlank()) { message.setFrom(fromAddress); }
+        message.setSubject(subject);
+        message.setText(cartHtml);
+        try { CompletableFuture.runAsync(() -> { try { mailSender.send(message); } catch (Exception ex) { logger.error("[MailService] Failed to send abandoned cart email to {}: {}", to, ex.getMessage()); } }); } catch (Exception e) { logger.error("[MailService] Failed to schedule abandoned cart email to {}: {}", to, e.getMessage()); }
     }
 }

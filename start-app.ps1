@@ -1,6 +1,7 @@
 $log = 'mvnw-run.log'
 if (Test-Path $log) { Remove-Item $log -ErrorAction SilentlyContinue }
-Write-Host "Starting mvnw in background..."
+Write-Host "Starting mvnw in background with 'local' profile..."
+$env:SPRING_PROFILES_ACTIVE = "local"
 Start-Process -FilePath 'cmd.exe' -ArgumentList '/c .\mvnw spring-boot:run > mvnw-run.log 2>&1' -WindowStyle Hidden
 
 # Wait for app to be ready

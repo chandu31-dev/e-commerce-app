@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS orders (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   order_date TIMESTAMP NOT NULL,
   total_price DECIMAL(10,2) NOT NULL,
+  discount_amount DECIMAL(10,2),
+  coupon_code VARCHAR(255),
   user_id BIGINT NOT NULL,
   status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
   CONSTRAINT FK_orders_user FOREIGN KEY (user_id) REFERENCES users(id)
@@ -62,4 +64,30 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
   user_id BIGINT NOT NULL,
   expiry_date TIMESTAMP NOT NULL,
   CONSTRAINT FK_reset_tokens_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Payment ledger (internal)
+CREATE TABLE IF NOT EXISTS payment_ledger (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  order_id BIGINT,
+  user_id BIGINT,
+  amount DECIMAL(10,2),
+  currency VARCHAR(10),
+  method VARCHAR(50),
+  status VARCHAR(50),
+  provider_reference VARCHAR(255),
+  provider_payload TEXT,
+  notes VARCHAR(1000),
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
+
+-- Payment audit entries
+CREATE TABLE IF NOT EXISTS payment_audit (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  payment_id BIGINT NOT NULL,
+  action VARCHAR(255),
+  actor VARCHAR(255),
+  notes TEXT,
+  created_at TIMESTAMP
 );

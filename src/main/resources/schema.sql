@@ -23,18 +23,35 @@ CREATE TABLE IF NOT EXISTS products (
   stock INTEGER NOT NULL
 );
 
+-- User saved addresses (moved earlier so orders can reference address_id)
+CREATE TABLE IF NOT EXISTS addresses (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  label VARCHAR(255),
+  address VARCHAR(1000) NOT NULL,
+  latitude DOUBLE,
+  longitude DOUBLE,
+  phone VARCHAR(50),
+  is_default BOOLEAN NOT NULL DEFAULT FALSE,
+  CONSTRAINT FK_addresses_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- Orders
 CREATE TABLE IF NOT EXISTS orders (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   order_date TIMESTAMP NOT NULL,
+  address_id BIGINT,
   total_price DECIMAL(10,2) NOT NULL,
   user_id BIGINT NOT NULL,
+  discount_amount DECIMAL(10,2),
+  coupon_code VARCHAR(255),
   delivery_address VARCHAR(1000),
   delivery_latitude DOUBLE,
   delivery_longitude DOUBLE,
   delivery_phone VARCHAR(50),
   status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
-  CONSTRAINT FK_orders_user FOREIGN KEY (user_id) REFERENCES users(id)
+  CONSTRAINT FK_orders_user FOREIGN KEY (user_id) REFERENCES users(id),
+  CONSTRAINT FK_orders_address FOREIGN KEY (address_id) REFERENCES addresses(id)
 );
 
 -- Order items
@@ -54,9 +71,49 @@ CREATE TABLE IF NOT EXISTS cart_items (
   quantity INTEGER NOT NULL,
   product_id BIGINT NOT NULL,
   user_id BIGINT,
+  updated_at TIMESTAMP,
   session_id VARCHAR(255),
   CONSTRAINT FK_cart_items_product FOREIGN KEY (product_id) REFERENCES products(id),
   CONSTRAINT FK_cart_items_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Abandoned cart reminders
+CREATE TABLE IF NOT EXISTS abandoned_cart_reminders (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  created_at TIMESTAMP NOT NULL,
+  sent_at TIMESTAMP,
+  recovered BOOLEAN NOT NULL DEFAULT FALSE,
+  reminder_count INTEGER DEFAULT 0,
+  cart_snapshot VARCHAR(4000),
+  CONSTRAINT FK_abandoned_cart_reminders_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Payment ledger (internal)
+CREATE TABLE IF NOT EXISTS payment_ledger (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  order_id BIGINT,
+  user_id BIGINT,
+  amount DECIMAL(10,2),
+  currency VARCHAR(10),
+  method VARCHAR(50),
+  status VARCHAR(50),
+  provider_reference VARCHAR(255),
+  provider_payload TEXT,
+  notes VARCHAR(1000),
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP
+);
+
+-- Payment audit entries
+CREATE TABLE IF NOT EXISTS payment_audit (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  payment_id BIGINT NOT NULL,
+  action VARCHAR(255),
+  actor VARCHAR(255),
+  notes TEXT,
+  created_at TIMESTAMP
 );
 
 -- Verification tokens
@@ -112,17 +169,7 @@ CREATE TABLE IF NOT EXISTS vendor_products (
 );
 
 -- User saved addresses
-CREATE TABLE IF NOT EXISTS addresses (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  user_id BIGINT NOT NULL,
-  label VARCHAR(255),
-  address VARCHAR(1000) NOT NULL,
-  latitude DOUBLE,
-  longitude DOUBLE,
-  phone VARCHAR(50),
-  is_default BOOLEAN NOT NULL DEFAULT FALSE,
-  CONSTRAINT FK_addresses_user FOREIGN KEY (user_id) REFERENCES users(id)
-);
+-- NOTE: addresses table moved earlier in the file to satisfy FK ordering.
 -- Wishlist items
 CREATE TABLE IF NOT EXISTS wishlist_items (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -218,3 +265,9 @@ CREATE TABLE IF NOT EXISTS payments (
   transaction_id VARCHAR(255),
   CONSTRAINT FK_payments_order FOREIGN KEY (order_id) REFERENCES orders(id)
 );
+
+-- User saved addresses (moved earlier so orders can reference address_id)
+-- Duplicate block removed.
+
+-- User saved addresses (moved so Orders can reference address_id)
+-- Duplicate block removed.

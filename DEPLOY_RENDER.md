@@ -1,3 +1,4 @@
+DEPLOY_RENDER.md archived — see `archive_deployment/DEPLOY_RENDER.md` for the original contents.
 # Deploying to Render
 
 Steps to deploy this Spring Boot application to Render using the provided `render.yaml` and `Dockerfile`:

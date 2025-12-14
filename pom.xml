@@ -137,11 +137,11 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- In-memory test database -->
+		<!-- In-memory database (also available at runtime for local development) -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
-			<scope>test</scope>
+			<!-- available at runtime for local profile -->
 		</dependency>
 
 		<!-- ZXing for QR code generation -->

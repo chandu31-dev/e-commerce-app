@@ -38,25 +38,46 @@ public class DataSeeder implements CommandLineRunner {
 
         String newAdminEmail = "chandukiranpotru0@gmail.com";
         String newAdminPassword = "admin123"; // change after first login for security
-        if (userRepository.findByEmail(newAdminEmail).isEmpty()) {
+        var existingAdmin = userRepository.findByEmail(newAdminEmail);
+        if (existingAdmin.isEmpty()) {
             User admin = new User();
             admin.setName("Admin User");
             admin.setEmail(newAdminEmail);
             admin.setPassword(passwordEncoder.encode(newAdminPassword));
             admin.setRole(User.Role.ADMIN);
+            // Enable seeded admin by default so local testing can authenticate
+            admin.setEnabled(true);
             userRepository.save(admin);
             System.out.println("Admin user created: " + newAdminEmail + " / " + newAdminPassword);
+        } else {
+            // Ensure existing admin is enabled for local testing
+            User adm = existingAdmin.get();
+            if (!adm.isEnabled()) {
+                adm.setEnabled(true);
+                userRepository.save(adm);
+                System.out.println("Enabled existing admin account: " + newAdminEmail);
+            }
         }
 
         // Create test user if not exists
-        if (userRepository.findByEmail("user@catchy.com").isEmpty()) {
+        var existingTest = userRepository.findByEmail("user@catchy.com");
+        if (existingTest.isEmpty()) {
             User user = new User();
             user.setName("Test User");
             user.setEmail("user@catchy.com");
             user.setPassword(passwordEncoder.encode("user123"));
             user.setRole(User.Role.USER);
+            // Enable seeded test user
+            user.setEnabled(true);
             userRepository.save(user);
             System.out.println("Test user created: user@catchy.com / user123");
+        } else {
+            User t = existingTest.get();
+            if (!t.isEnabled()) {
+                t.setEnabled(true);
+                userRepository.save(t);
+                System.out.println("Enabled existing test user account: user@catchy.com");
+            }
         }
 
         // Create sample products if database is empty

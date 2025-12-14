@@ -1,6 +1,7 @@
 package com.catchy.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,10 +56,12 @@ public class CartService {
             if (product.getStock() < newQuantity) {
                 throw new RuntimeException("Insufficient stock for product id=" + product.getId() + " name='" + product.getName() + "' stock=" + product.getStock() + " existing=" + cartItem.getQuantity() + " requestedAdd=" + quantity + " wouldBe=" + newQuantity);
             }
+            cartItem.setUpdatedAt(LocalDateTime.now());
             cartItem.setQuantity(newQuantity);
             return cartItemRepository.save(cartItem);
         } else {
             CartItem cartItem = new CartItem(user, product, quantity);
+            cartItem.setUpdatedAt(LocalDateTime.now());
             return cartItemRepository.save(cartItem);
         }
     }
@@ -124,6 +127,7 @@ public class CartService {
                     int finalQty = Math.min(product.getStock(), qtyToAdd);
                     if (finalQty <= 0) continue;
                     CartItem ci = new CartItem(user, product, finalQty);
+                    ci.setUpdatedAt(LocalDateTime.now());
                     cartItemRepository.save(ci);
                 }
                 merged++;

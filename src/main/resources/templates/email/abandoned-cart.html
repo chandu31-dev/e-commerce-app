@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Complete your cart</title>
+</head>
+<body>
+    <h3>We saved your cart</h3>
+    <p>Dear customer,</p>
+    <p>We noticed you left items in your cart. Click the button below to return to your cart and complete the checkout.</p>
+    <p th:utext="${body}"></p>
+    <p><a th:href="@{/cart/resume(token=${token})}">Resume your cart</a></p>
+    <p>Thanks,<br/>The Catchy Team</p>
+</body>
+</html>

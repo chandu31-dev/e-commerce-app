@@ -1,19 +1,30 @@
 package com.catchy.controller;
 
-import com.catchy.model.CartItem;
-import com.catchy.model.User;
-import com.catchy.service.AuthService;
-import com.catchy.service.CartService;
+import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.catchy.model.CartItem;
+import com.catchy.model.User;
+import com.catchy.service.AuthService;
+import com.catchy.service.CartService;
 
 @Controller
 @RequestMapping("/cart")
@@ -23,6 +34,9 @@ public class CartController {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private com.catchy.repository.AbandonedCartReminderRepository abandonedCartReminderRepository;
 
     @GetMapping
     public String cartPage(Model model) {
@@ -120,6 +134,28 @@ public class CartController {
             return ResponseEntity.ok(cartService.getCartItems(user));
         } catch (Exception e) {
             return ResponseEntity.ok(List.of());
+        }
+    }
+
+    @GetMapping("/resume")
+    public String resumeCart(@RequestParam String token) {
+        try {
+            User user = authService.getCurrentUser();
+            if (user == null) {
+                String redirect = URLEncoder.encode("/cart/resume?token=" + token, StandardCharsets.UTF_8);
+                return "redirect:/login?redirect=" + redirect;
+            }
+            Optional<com.catchy.model.AbandonedCartReminder> r = abandonedCartReminderRepository.findByToken(token);
+            if (r.isPresent()) {
+                var rem = r.get();
+                if (rem.getUser().getId().equals(user.getId())) {
+                    rem.setRecovered(true);
+                    abandonedCartReminderRepository.save(rem);
+                }
+            }
+            return "redirect:/cart";
+        } catch (Exception e) {
+            return "redirect:/cart";
         }
     }
 }

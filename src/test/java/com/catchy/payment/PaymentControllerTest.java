@@ -1,8 +1,8 @@
 package com.catchy.payment;
 
-import com.catchy.payment.dto.PaymentRequest;
-import com.catchy.payment.dto.PaymentResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -10,15 +10,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.math.BigDecimal;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.catchy.payment.dto.PaymentRequest;
+import com.catchy.payment.dto.PaymentResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @SpringBootTest
+@org.springframework.test.context.ActiveProfiles("test")
 @AutoConfigureMockMvc
 public class PaymentControllerTest {
 
