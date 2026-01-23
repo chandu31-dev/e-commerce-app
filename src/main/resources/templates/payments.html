@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Payments - Catchy</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <style>
+        .payments-card { max-width: 800px; margin: 2rem auto; padding: 2rem; background:white; border-radius:8px; }
+        .methods { display:flex; gap:1rem; }
+        .method { padding:1rem; border:1px solid #ddd; border-radius:6px; cursor:pointer; }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="logo">🛍️ Catchy</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="payments-card">
+            <h2>Complete Payment</h2>
+            <div id="message"></div>
+
+            <div style="margin-top:1rem;">
+                <strong>Amount:</strong> <span id="amount">₹ 0.00</span>
+            </div>
+
+            <div style="margin-top:1rem;">
+                <strong>Select Payment Method</strong>
+                <div class="methods" style="margin-top:0.5rem;">
+                    <div class="method" id="methodCard">Card</div>
+                    <div class="method" id="methodUpi">UPI</div>
+                    <div class="method" id="methodCod">Cash on Delivery</div>
+                </div>
+            </div>
+
+            <div id="upiBox" style="display:none; margin-top:1rem;">
+                <p>UPI ID: <span id="upiId">-</span></p>
+                <button id="upiOpen" class="btn btn-primary">Open in UPI App</button>
+                <button id="upiPaid" class="btn btn-success">I have paid (simulate)</button>
+            </div>
+
+            <div id="cardBox" style="display:none; margin-top:1rem;">
+                <p>Card payment (simulated in dev)</p>
+                <button id="cardPay" class="btn btn-primary">Pay with Card (simulate)</button>
+            </div>
+
+            <div id="codBox" style="display:none; margin-top:1rem;">
+                <p>Confirm Cash on Delivery</p>
+                <button id="codConfirm" class="btn btn-primary">Confirm COD</button>
+            </div>
+
+            <div style="margin-top:1rem;">
+                <a href="/cart">Back to Cart</a>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/main.js}"></script>
+    <script>
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        async function loadPayment(paymentId) {
+            const msg = document.getElementById('message');
+            try {
+                const resp = await fetch('/api/internal-payments/' + paymentId);
+                if (!resp.ok) { msg.textContent = 'Payment not found'; return null; }
+                const p = await resp.json();
+                document.getElementById('amount').textContent = '₹ ' + (p.amount ? parseFloat(p.amount).toFixed(2) : '0.00');
+                return p;
+            } catch (e) {
+                msg.textContent = 'Error loading payment';
+                return null;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const paymentId = getQueryParam('paymentId');
+            if (!paymentId) {
+                document.getElementById('message').innerHTML = '<div class="error-message">No payment was initiated. Please place an order from the Cart first.</div>';
+                return;
+            }
+
+            const payment = await loadPayment(paymentId);
+            if (!payment) return;
+
+            // Method handlers
+            document.getElementById('methodUpi').onclick = async function() {
+                // set method to UPI and initiate provider
+                await fetch('/api/internal-payments/' + paymentId + '/method?method=UPI', { method: 'POST' });
+                // fetch upi link
+                const upiResp = await fetch('/api/internal-payments/' + paymentId + '/upi');
+                if (upiResp.ok) {
+                    const u = await upiResp.json();
+                    document.getElementById('upiId').textContent = u.upiId || 'merchant@upi';
+                    document.getElementById('upiBox').style.display = 'block';
+                    document.getElementById('cardBox').style.display = 'none';
+                    document.getElementById('codBox').style.display = 'none';
+                    // open in app
+                    document.getElementById('upiOpen').onclick = function() { if (u.upiLink) window.location.href = u.upiLink; else alert('UPI link not available'); };
+                    document.getElementById('upiPaid').onclick = async function() {
+                        // For dev: simulate success
+                        await fetch('/api/internal-payments/' + paymentId + '/mock-success', { method: 'POST' });
+                        // confirm on server and try to complete
+                        await fetch('/api/internal-payments/' + paymentId + '/complete', { method: 'POST' });
+                        const updated = await fetch('/api/internal-payments/' + paymentId).then(r => r.json());
+                        if (updated.orderId) { window.location.href = '/orders/' + updated.orderId; } else { alert('Payment succeeded but order not created.'); }
+                    };
+                }
+            };
+
+            document.getElementById('methodCard').onclick = async function() {
+                await fetch('/api/internal-payments/' + paymentId + '/method?method=CARD', { method: 'POST' });
+                document.getElementById('cardBox').style.display = 'block';
+                document.getElementById('upiBox').style.display = 'none';
+                document.getElementById('codBox').style.display = 'none';
+            };
+
+            document.getElementById('cardPay').onclick = async function() {
+                // Simulate success for dev
+                await fetch('/api/internal-payments/' + paymentId + '/mock-success', { method: 'POST' });
+                await fetch('/api/internal-payments/' + paymentId + '/complete', { method: 'POST' });
+                const updated = await fetch('/api/internal-payments/' + paymentId).then(r => r.json());
+                if (updated.orderId) { window.location.href = '/orders/' + updated.orderId; } else { alert('Payment succeeded but order not created.'); }
+            };
+
+            document.getElementById('methodCod').onclick = function() {
+                document.getElementById('codBox').style.display = 'block';
+                document.getElementById('cardBox').style.display = 'none';
+                document.getElementById('upiBox').style.display = 'none';
+            };
+
+            document.getElementById('codConfirm').onclick = async function() {
+                // Mark COD settled and create order
+                const resp = await fetch('/api/internal-payments/' + paymentId + '/cod', { method: 'POST' });
+                const json = await resp.json();
+                // try to complete
+                await fetch('/api/internal-payments/' + paymentId + '/complete', { method: 'POST' });
+                const updated = await fetch('/api/internal-payments/' + paymentId).then(r => r.json());
+                if (updated.orderId) { window.location.href = '/orders/' + updated.orderId; } else { alert('COD registered but order could not be created.'); }
+            };
+        });
+    </script>
+</body>
+</html>

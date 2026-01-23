@@ -192,6 +192,56 @@ public class MailService {
         }
     }
 
+    public void sendWelcomeEmail(String to, String subject, String text) {
+        // Reuse the verification template style for welcome emails when available
+        if (mailSender != null && templateEngine != null) {
+            try {
+                MimeMessage mime = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(mime, "utf-8");
+                Context ctx = new Context();
+                ctx.setVariables(Map.of("name", to, "body", text));
+                String html = templateEngine.process("email/welcome", ctx);
+                helper.setTo(to);
+                if (fromAddress != null && !fromAddress.isBlank()) helper.setFrom(fromAddress);
+                helper.setSubject(subject);
+                helper.setText(html, true);
+                CompletableFuture.runAsync(() -> {
+                    try { mailSender.send(mime); } catch (Exception ex) { logger.error("[MailService] Failed to send welcome email: {}", ex.getMessage()); }
+                });
+                return;
+            } catch (Exception e) {
+                logger.warn("[MailService] HTML welcome email failed, falling back: {}", e.getMessage());
+            }
+        }
+
+        if (mailSender == null) {
+            logger.info("[MailService] WELCOME EMAIL to={} subject={}", to, subject);
+            logger.debug("Welcome email body: {}", text);
+            try {
+                Path out = Path.of("target", "welcome-emails.txt");
+                Files.createDirectories(out.getParent());
+                Files.writeString(out, "TO: " + to + "\nSUBJECT: " + subject + "\n\n" + text + System.lineSeparator(), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (Exception e) {
+                logger.warn("[MailService] Failed to write welcome email to file: {}", e.getMessage());
+            }
+            return;
+        }
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        if (fromAddress != null && !fromAddress.isBlank()) {
+            message.setFrom(fromAddress);
+        }
+        message.setSubject(subject);
+        message.setText(text);
+        try {
+            CompletableFuture.runAsync(() -> {
+                try { mailSender.send(message); } catch (Exception ex) { logger.error("[MailService] Failed to send welcome email to {}: {}", to, ex.getMessage()); }
+            });
+        } catch (Exception e) {
+            logger.error("[MailService] Failed to schedule welcome email to {}: {}", to, e.getMessage());
+        }
+    }
+
     public void sendResetEmail(String to, String subject, String text) {
         if (mailSender != null && templateEngine != null) {
             try {

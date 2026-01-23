@@ -16,14 +16,7 @@ public class CheckoutController {
 
     @GetMapping("/checkout")
     public String checkoutPage(@RequestParam(value = "orderId", required = false) Long orderId, Model model) {
-        if (orderId != null) {
-            try {
-                var order = orderService.getOrderById(orderId);
-                model.addAttribute("order", order);
-            } catch (Exception e) {
-                // ignore - view can handle missing order
-            }
-        }
-        return "checkout";
+        // Checkout page has been removed — redirect to payments landing
+        return "redirect:/payments";
     }
 }

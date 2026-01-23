@@ -3,8 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout - Catchy</title>
+    <title>Checkout Removed</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .center-box { padding: 4rem; text-align: center; }
+        .center-box a { margin: 0 .5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="center-box">
+            <h1>Checkout has moved</h1>
+            <p>The checkout page has been replaced by the new Payments flow. To pay for your order, please place your order from the Cart, then you'll be redirected to the Payments page.</p>
+            <p>
+                <a href="/cart" class="btn btn-primary">Go to Cart</a>
+                <a href="/payments" class="btn">Open Payments</a>
+                <a href="/buyer/home" class="btn">Buyer Home</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>
     <style>
         .checkout-container {
             display: flex;
@@ -286,32 +305,67 @@
         // Get order summary from server
         async function loadOrderSummary() {
             const orderId = document.getElementById('orderId').value;
-            if (!orderId) return;
+
+            const itemsContainer = document.getElementById('orderItems');
+            itemsContainer.innerHTML = '';
 
             try {
-                const response = await fetch(`/api/orders/${orderId}`);
-                const order = await response.json();
-                
-                // Display items
-                const itemsContainer = document.getElementById('orderItems');
-                itemsContainer.innerHTML = '';
-                
-                if (order.orderItems && order.orderItems.length > 0) {
-                    order.orderItems.forEach(item => {
-                        // `item.price` is stored as the line total (unitPrice * quantity) in the backend.
-                        // Do not multiply by quantity again in the UI — display the stored line total.
-                        const lineTotal = parseFloat(item.price) || (parseFloat(item.unitPrice || 0) * (item.quantity || 1));
-                        itemsContainer.innerHTML += `
-                            <div class="order-item">
-                                <span>${item.productName} x${item.quantity}</span>
-                                <span>₹ ${lineTotal.toFixed(2)}</span>
-                            </div>
-                        `;
-                    });
+                let totalAmount = 0;
+
+                if (orderId) {
+                    // Existing behavior for placed orders
+                    const response = await fetch(`/api/orders/${orderId}`);
+                    if (!response.ok) throw new Error('Failed to fetch order');
+                    const order = await response.json();
+
+                    if (order.orderItems && order.orderItems.length > 0) {
+                        order.orderItems.forEach(item => {
+                            // Prefer stored line total (item.price). Fallback to unitPrice * quantity if missing.
+                            const lineTotal = parseFloat(item.price) || (parseFloat(item.unitPrice || 0) * (item.quantity || 1));
+                            const name = item.productName || (item.product && item.product.name) || 'Product';
+                            itemsContainer.innerHTML += `
+                                <div class="order-item">
+                                    <span>${name} x${item.quantity}</span>
+                                    <span>₹ ${lineTotal.toFixed(2)}</span>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    // Update total (use order.totalPrice if present, otherwise sum item line totals)
+                    if (order.totalPrice && parseFloat(order.totalPrice) > 0) {
+                        totalAmount = parseFloat(order.totalPrice);
+                    } else {
+                        totalAmount = (order.orderItems || []).reduce((s, it) => {
+                            const line = parseFloat(it.price) || (parseFloat(it.unitPrice || 0) * (it.quantity || 1));
+                            return s + (isNaN(line) ? 0 : line);
+                        }, 0);
+                    }
+                } else {
+                    // No orderId: show current cart summary and compute total as sum(product.price * qty)
+                    const resp = await fetch('/cart/api/items');
+                    if (resp.ok) {
+                        const cartItems = await resp.json();
+                        if (cartItems && cartItems.length > 0) {
+                            cartItems.forEach(ci => {
+                                const qty = ci.quantity || 1;
+                                const unit = parseFloat((ci.product && (ci.product.price || ci.product.unitPrice)) || ci.unitPrice || 0) || 0;
+                                const line = unit * qty;
+                                const name = (ci.product && ci.product.name) || ci.productName || 'Product';
+                                itemsContainer.innerHTML += `
+                                    <div class="order-item">
+                                        <span>${name} x${qty}</span>
+                                        <span>₹ ${line.toFixed(2)}</span>
+                                    </div>
+                                `;
+                                totalAmount += line;
+                            });
+                        }
+                    } else {
+                        console.warn('Could not fetch cart items for summary');
+                    }
                 }
-                
-                // Update total
-                const totalAmount = parseFloat(order.totalPrice) || 0;
+
                 document.getElementById('totalAmount').textContent = `₹ ${totalAmount.toFixed(2)}`;
                 document.getElementById('displayAmount').textContent = totalAmount.toFixed(2);
                 document.getElementById('amount').value = totalAmount;
@@ -531,7 +585,7 @@
                         showSuccess('Payment successful! Your order has been placed.');
                         setTimeout(() => { window.location.href = '/orders/' + orderId; }, 1500);
                     } else {
-                        showError('Payment not completed yet. Please check your payment app and try again.');
+                        showError('Payment not completed yet (status=' + (ledger && ledger.status ? ledger.status : 'unknown') + '). Please check your payment app and try again.');
                     }
                 } catch (e){
                     showError('Error verifying payment: ' + e.message);

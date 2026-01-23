@@ -38,6 +38,20 @@ public class HomeController {
         }
     }
 
+    @GetMapping("/buyer/home/view")
+    public String buyerHomeView(Model model) {
+        try {
+            User user = authService.getCurrentUser();
+            if (user == null) {
+                return "redirect:/login";
+            }
+            // Intentionally allow vendor users to view buyer home
+            return "buyer-home";
+        } catch (Exception e) {
+            return "redirect:/login";
+        }
+    }
+
     @GetMapping("/vendor/home")
     public String vendorHome(Model model) {
         try {

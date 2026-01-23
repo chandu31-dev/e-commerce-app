@@ -54,6 +54,12 @@ public class AuthService {
 
         User saved = userRepository.save(user);
         // No verification token/email: accounts enabled immediately for deployment convenience
+        try {
+            if (mailService != null) {
+                String body = "Hi " + saved.getName() + ",\n\nWelcome to Catchy! We\'re glad you joined. Start browsing products and enjoy shopping.\n\nThanks,\nThe Catchy Team";
+                mailService.sendWelcomeEmail(saved.getEmail(), "Welcome to Catchy", body);
+            }
+        } catch (Exception ignored) {}
 
         return saved;
     }

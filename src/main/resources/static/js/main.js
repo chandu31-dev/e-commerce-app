@@ -300,7 +300,7 @@ async function confirmOrderWithAddress() {
 
     const addressId = selectedAddressInput.value;
 
-    if (!confirm('Are you sure you want to place this order?')) {
+    if (!confirm('Proceed to payment?')) {
         return;
     }
 
@@ -315,28 +315,55 @@ async function confirmOrderWithAddress() {
 
         const couponCode = document.getElementById('couponInput') ? document.getElementById('couponInput').value : null;
 
-        const payload = { addressId: parseInt(addressId) };
+        // Compute cart total on client
+        let amount = 0;
+        try {
+            const cartResp = await fetch(`${API_BASE}/cart/api/items`, { headers });
+            if (cartResp.ok) {
+                const cartItems = await cartResp.json();
+                amount = (cartItems || []).reduce((s, ci) => {
+                    const unit = (ci.product && (ci.product.price || ci.product.unitPrice)) || ci.unitPrice || 0;
+                    return s + (parseFloat(unit || 0) * (ci.quantity || 1));
+                }, 0);
+            }
+        } catch (e) {
+            // ignore - fallback
+        }
+
+        const payload = { addressId: parseInt(addressId), amount: amount, currency: 'INR' };
         if (couponCode) payload.couponCode = couponCode;
 
-        const response = await fetch(`${API_BASE}/orders/api/place`, {
+        const response = await fetch(`${API_BASE}/api/internal-payments/initiate`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(payload)
         });
 
-        const result = await response.json();
-
-        if (result.success) {
-            showMessage('Order placed successfully!', 'success');
-            setTimeout(() => {
-                // Redirect to checkout page to complete payment
-                window.location.href = `/checkout?orderId=${result.orderId}`;
-            }, 1500);
-        } else {
-            showMessage(result.message || 'Error placing order', 'error');
+        if (!response.ok) {
+            const err = await response.json().catch(()=>null);
+            showMessage((err && err.message) || 'Error initiating payment', 'error');
+            return;
         }
+
+        const location = response.headers.get('Location') || response.headers.get('location');
+        let paymentId = null;
+        if (location) {
+            const parts = location.split('/');
+            paymentId = parts[parts.length-1];
+        } else {
+            const respJson = await response.json().catch(()=>null);
+            if (respJson && respJson.paymentId) paymentId = respJson.paymentId;
+        }
+
+        if (!paymentId) {
+            showMessage('Could not initiate payment', 'error');
+            return;
+        }
+
+        showMessage('Payment initiated. Redirecting to payment page...', 'success');
+        setTimeout(() => { window.location.href = '/payments?paymentId=' + paymentId; }, 800);
     } catch (error) {
-        showMessage('Error placing order', 'error');
+        showMessage('Error initiating payment', 'error');
     }
 }
 

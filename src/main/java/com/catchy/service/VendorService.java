@@ -109,6 +109,16 @@ public class VendorService {
         VendorProduct vendorProduct = new VendorProduct(vendor, product, vendorPrice, stock);
         VendorProduct saved = vendorProductRepository.save(vendorProduct);
 
+        // Ensure the base Product stock reflects vendor listings (aggregate across vendors)
+        try {
+            int existing = product.getStock() == null ? 0 : product.getStock();
+            int add = stock == null ? 0 : stock;
+            product.setStock(existing + add);
+            productRepository.save(product);
+        } catch (Exception e) {
+            // don't fail vendor creation if stock sync fails
+        }
+
         try {
             if (mailService != null && vendor.getContactEmail() != null) {
                 String subject = "New product listed: " + product.getName();
@@ -139,6 +149,19 @@ public class VendorService {
 
         VendorProduct saved = vendorProductRepository.save(vendorProduct);
 
+        // Sync product stock by applying the delta between new and old vendor stock
+        try {
+            Product product = saved.getProduct();
+            int pStock = product.getStock() == null ? 0 : product.getStock();
+            int delta = (newStock == null ? 0 : newStock) - (oldStock == null ? 0 : oldStock);
+            int updated = pStock + delta;
+            if (updated < 0) updated = 0;
+            product.setStock(updated);
+            productRepository.save(product);
+        } catch (Exception e) {
+            // ignore sync errors
+        }
+
         try {
             Vendor v = saved.getVendor();
             if (mailService != null && v != null && v.getContactEmail() != null) {
@@ -161,6 +184,21 @@ public class VendorService {
 
     @Transactional
     public void removeProductFromVendor(Long vendorProductId) {
+        // Before removing, decrement base product stock by vendor product stock
+        var vp = vendorProductRepository.findById(vendorProductId).orElse(null);
+        if (vp != null) {
+            try {
+                Product p = vp.getProduct();
+                int pStock = p.getStock() == null ? 0 : p.getStock();
+                int reduce = vp.getStock() == null ? 0 : vp.getStock();
+                int updated = pStock - reduce;
+                if (updated < 0) updated = 0;
+                p.setStock(updated);
+                productRepository.save(p);
+            } catch (Exception e) {
+                // ignore
+            }
+        }
         vendorProductRepository.deleteById(vendorProductId);
     }
 
